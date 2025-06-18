@@ -9,26 +9,29 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import toast from 'react-hot-toast';
 
 const StatsCard = ({ title, value, icon: Icon, change, changeType }) => (
-  <div className="bg-white overflow-hidden shadow rounded-lg">
-    <div className="p-5">
-      <div className="flex items-center">
-        <div className="flex-shrink-0">
-          <Icon className="h-6 w-6 text-gray-400" />
+  <div className="group relative bg-white overflow-hidden shadow-lg hover:shadow-xl rounded-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+    {/* Subtle gradient accent */}
+    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+    
+    <div className="p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <dt className="text-sm font-medium text-gray-600 mb-2">{title}</dt>
+          <dd className="flex items-baseline">
+            <div className="text-3xl font-bold text-gray-900">{value}</div>
+            {change && (
+              <div className={`ml-3 flex items-baseline text-sm font-semibold px-2 py-1 rounded-full ${
+                changeType === 'increase' 
+                  ? 'text-emerald-700 bg-emerald-50' 
+                  : 'text-red-700 bg-red-50'
+              }`}>
+                {change}
+              </div>
+            )}
+          </dd>
         </div>
-        <div className="ml-5 w-0 flex-1">
-          <dl>
-            <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
-            <dd className="flex items-baseline">
-              <div className="text-2xl font-semibold text-gray-900">{value}</div>
-              {change && (
-                <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                  changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {change}
-                </div>
-              )}
-            </dd>
-          </dl>
+        <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl group-hover:from-blue-100 group-hover:to-indigo-100 transition-colors duration-300">
+          <Icon className="h-7 w-7 text-blue-600" />
         </div>
       </div>
     </div>
@@ -41,7 +44,6 @@ export default function DashboardPage() {
   const [todayStatus, setTodayStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState([]);
-
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -181,7 +183,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+          <div className="absolute inset-0 rounded-full bg-blue-50 animate-pulse"></div>
+        </div>
       </div>
     );
   }
@@ -195,125 +200,173 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Welcome back, {user.fullName}! Here's what's happening today.
-          </p>
+    <div className="min-h-screen">
+      <div className="p-6 space-y-8">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Welcome back, {user.fullName}! Here's what's happening today.
+            </p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 font-medium"
+          >
+            <FiRefreshCw className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50"
-        >
-          <FiRefreshCw className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="mb-8 bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
-        <div className="flex space-x-4">
-          {!todayStatus || !todayStatus.CheckInTime ? (
-            <button
-              onClick={handleCheckIn}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center"
-            >
-              <FiClock className="mr-2" />
-              Check In
-            </button>
-          ) : !todayStatus.CheckOutTime ? (
-            <button
-              onClick={handleCheckOut}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center"
-            >
-              <FiClock className="mr-2" />
-              Check Out
-            </button>
-          ) : (
-            <div className="text-green-600 flex items-center">
-              <FiClock className="mr-2" />
-              Attendance marked for today
+        {/* Quick Actions */}
+        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
+          </div>
+          <div className="p-6">
+            <div className="flex space-x-4 mb-6">
+              {!todayStatus || !todayStatus.CheckInTime ? (
+                <button
+                  onClick={handleCheckIn}
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-6 py-3 rounded-xl hover:from-emerald-700 hover:to-emerald-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+                >
+                  <FiClock className="mr-2" />
+                  Check In
+                </button>
+              ) : !todayStatus.CheckOutTime ? (
+                <button
+                  onClick={handleCheckOut}
+                  className="bg-gradient-to-r from-rose-600 to-rose-700 text-white px-6 py-3 rounded-xl hover:from-rose-700 hover:to-rose-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+                >
+                  <FiClock className="mr-2" />
+                  Check Out
+                </button>
+              ) : (
+                <div className="flex items-center text-emerald-700 bg-emerald-50 px-6 py-3 rounded-xl border border-emerald-200">
+                  <FiClock className="mr-2" />
+                  <span className="font-medium">Attendance marked for today</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        
-        {todayStatus && todayStatus.CheckInTime && (
-          <div className="mt-4 text-sm text-gray-600">
-            <p>Check-in: {new Date(todayStatus.CheckInTime).toLocaleTimeString()}</p>
-            {todayStatus.CheckOutTime && (
-              <p>Check-out: {new Date(todayStatus.CheckOutTime).toLocaleTimeString()}</p>
+            
+            {todayStatus && todayStatus.CheckInTime && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                  <p className="text-sm text-blue-700 font-medium">Check-in Time</p>
+                  <p className="text-blue-900 font-semibold text-lg">
+                    {new Date(todayStatus.CheckInTime).toLocaleTimeString()}
+                  </p>
+                </div>
+                {todayStatus.CheckOutTime && (
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+                    <p className="text-sm text-purple-700 font-medium">Check-out Time</p>
+                    <p className="text-purple-900 font-semibold text-lg">
+                      {new Date(todayStatus.CheckOutTime).toLocaleTimeString()}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
+        </div>
+
+        {/* Stats Grid - Only for Admin/Manager */}
+        {(user.role === 'admin' || user.role === 'manager') && stats && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              title="Total Employees"
+              value={stats.ActiveEmployees || 0}
+              icon={FiUsers}
+              change="+5.2%"
+              changeType="increase"
+            />
+            <StatsCard
+              title="Present Today"
+              value={stats.TodayAttendance || 0}
+              icon={FiClock}
+              change="+12%"
+              changeType="increase"
+            />
+            <StatsCard
+              title="Pending Leaves"
+              value={stats.PendingLeaves || 0}
+              icon={FiCalendar}
+              change="-8%"
+              changeType="decrease"
+            />
+            <StatsCard
+              title="Departments"
+              value={stats.TotalDepartments || 0}
+              icon={FiTrendingUp}
+            />
+          </div>
         )}
-      </div>
 
-      {/* Stats Grid - Only for Admin/Manager */}
-      {(user.role === 'admin' || user.role === 'manager') && stats && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <StatsCard
-            title="Total Employees"
-            value={stats.ActiveEmployees || 0}
-            icon={FiUsers}
-          />
-          <StatsCard
-            title="Present Today"
-            value={stats.TodayAttendance || 0}
-            icon={FiClock}
-            change="+12%"
-            changeType="increase"
-          />
-          <StatsCard
-            title="Pending Leaves"
-            value={stats.PendingLeaves || 0}
-            icon={FiCalendar}
-          />
-          <StatsCard
-            title="Departments"
-            value={stats.TotalDepartments || 0}
-            icon={FiTrendingUp}
-          />
-        </div>
-      )}
+        {/* Attendance Chart - Only for Admin/Manager */}
+        {(user.role === 'admin' || user.role === 'manager') && (
+          <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <h2 className="text-xl font-semibold text-gray-900">Weekly Attendance Overview</h2>
+            </div>
+            <div className="p-6">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
+                    <YAxis stroke="#64748b" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="present" 
+                      fill="#10b981" 
+                      name="Present" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar 
+                      dataKey="absent" 
+                      fill="#ef4444" 
+                      name="Absent" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Attendance Chart - Only for Admin/Manager */}
-      {(user.role === 'admin' || user.role === 'manager') && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Weekly Attendance Overview</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="present" fill="#10B981" name="Present" />
-                <Bar dataKey="absent" fill="#EF4444" name="Absent" />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Recent Activities */}
+        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <h2 className="text-xl font-semibold text-gray-900">Recent Activities</h2>
           </div>
-        </div>
-      )}
-
-      {/* Recent Activities */}
-      <div className="mt-8 bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Activities</h2>
-        <div className="space-y-3">
-          <div className="flex items-center text-sm">
-            <div className="flex-shrink-0 w-2 h-2 bg-green-400 rounded-full mr-3"></div>
-            <p className="text-gray-600">You checked in at 9:15 AM today</p>
-          </div>
-          <div className="flex items-center text-sm">
-            <div className="flex-shrink-0 w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
-            <p className="text-gray-600">Leave request approved for Dec 25-26</p>
-          </div>
-          <div className="flex items-center text-sm">
-            <div className="flex-shrink-0 w-2 h-2 bg-yellow-400 rounded-full mr-3"></div>
-            <p className="text-gray-600">New company policy updated</p>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                <div className="flex-shrink-0 w-3 h-3 bg-green-500 rounded-full mr-4"></div>
+                <p className="text-gray-700 font-medium">You checked in at 9:15 AM today</p>
+              </div>
+              <div className="flex items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+                <div className="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mr-4"></div>
+                <p className="text-gray-700 font-medium">Leave request approved for Dec 25-26</p>
+              </div>
+              <div className="flex items-center p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
+                <div className="flex-shrink-0 w-3 h-3 bg-amber-500 rounded-full mr-4"></div>
+                <p className="text-gray-700 font-medium">New company policy updated</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
