@@ -2,7 +2,7 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { createContext, useContext } from 'react';
 
 const RouteLoadingContext = createContext({});
@@ -15,7 +15,8 @@ export const useRouteLoading = () => {
   return context;
 };
 
-export default function RouteLoadingProvider({ children }) {
+// Component that uses search params - wrap in Suspense
+function RouteLoadingContent({ children }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -60,5 +61,28 @@ export default function RouteLoadingProvider({ children }) {
         </div>
       )}
     </RouteLoadingContext.Provider>
+  );
+}
+
+// Loading fallback component
+function RouteLoadingFallback({ children }) {
+  const value = {
+    loading: false,
+    setLoading: () => {}
+  };
+
+  return (
+    <RouteLoadingContext.Provider value={value}>
+      {children}
+    </RouteLoadingContext.Provider>
+  );
+}
+
+// Main provider with Suspense boundary
+export default function RouteLoadingProvider({ children }) {
+  return (
+    <Suspense fallback={<RouteLoadingFallback>{children}</RouteLoadingFallback>}>
+      <RouteLoadingContent>{children}</RouteLoadingContent>
+    </Suspense>
   );
 }

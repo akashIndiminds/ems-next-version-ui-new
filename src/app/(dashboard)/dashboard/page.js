@@ -46,20 +46,6 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Only fetch data once when component mounts and user is available
-    if (user && !loading) {
-      fetchDashboardData();
-    }
-  }, []); // Empty dependency array to run only once on mount
-
-  // Separate effect to handle user changes
-  useEffect(() => {
-    if (user) {
-      setLoading(false);
-    }
-  }, [user]);
-
   const fetchDashboardData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -128,11 +114,31 @@ export default function DashboardPage() {
     }
   };
 
+  // Main useEffect - runs when user changes or component mounts
+  useEffect(() => {
+    console.log('useEffect triggered, user:', user); // Debug log
+    
+    if (user) {
+      console.log('User found, fetching data...'); // Debug log
+      fetchDashboardData();
+    } else {
+      console.log('No user found, setting loading false'); // Debug log
+      setLoading(false);
+    }
+  }, [user]); // Add user as dependency
+
   const handleRefresh = () => {
-    fetchDashboardData(true);
+    if (user) {
+      fetchDashboardData(true);
+    }
   };
 
   const handleCheckIn = async () => {
+    if (!user) {
+      toast.error('User not found');
+      return;
+    }
+
     try {
       // Use user data directly from AuthContext
       let employeeId = user.employeeId;
@@ -157,6 +163,11 @@ export default function DashboardPage() {
   };
 
   const handleCheckOut = async () => {
+    if (!user) {
+      toast.error('User not found');
+      return;
+    }
+
     try {
       // Use user data directly from AuthContext
       let employeeId = user.employeeId;
@@ -180,6 +191,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Show loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -191,10 +203,19 @@ export default function DashboardPage() {
     );
   }
 
+  // Show no user state
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading user data...</div>
+        <div className="text-center">
+          <div className="text-gray-500 mb-2">No user data found</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            Reload page
+          </button>
+        </div>
       </div>
     );
   }
