@@ -17,9 +17,11 @@ const sidebarItems = [
   { name: 'Employees', href: '/employees', icon: FiUsers, roles: ['admin', 'manager'] },
   { name: 'Leave Management', href: '/leaves', icon: FiCalendar, roles: ['admin', 'manager', 'employee'] },
   { name: 'Departments', href: '/departments', icon: MdBusiness, roles: ['admin', 'manager'] },
+  { name: 'Leave Balance', href: '/leaveBalanceManagement', icon: FiCalendar, roles: ['admin', 'manager'] },
   { name: 'Locations', href: '/locations', icon: MdLocationOn, roles: ['admin'] },
   { name: 'Reports', href: '/reports', icon: FiFileText, roles: ['admin', 'manager'] },
-  { name: 'Company', href: '/company', icon: FiSettings, roles: ['admin'] }
+  { name: 'Company', href: '/company', icon: FiSettings, roles: ['admin'] },
+
 ];
 
 export default function DashboardLayout({ children }) {
@@ -133,7 +135,7 @@ export default function DashboardLayout({ children }) {
         <div className="flex-1 flex flex-col min-h-0 bg-white shadow-xl border-r border-gray-200">
           {/* Logo */}
           <div className="flex items-center h-16 flex-shrink-0 px-6 bg-gradient-to-r from-blue-600 to-blue-700">
-            <h1 className="text-xl font-bold text-white">AttendanceHub</h1>
+            {/* <h1 className="text-xl font-bold text-white">AttendanceHub</h1> */}
           </div>
           
           {/* Navigation */}

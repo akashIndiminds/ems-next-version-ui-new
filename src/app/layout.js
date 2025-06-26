@@ -8,7 +8,7 @@ import RouteLoadingProvider from '@/components/providers/RouteLoadingProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'AttendanceHub - Employee Attendance Management System',
+  // title: 'AttendanceHub - Employee Attendance Management System',
   description: 'Complete attendance management solution for modern organizations',
 };
 

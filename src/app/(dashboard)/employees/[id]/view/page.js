@@ -71,7 +71,6 @@ export default function ViewEmployeePage() {
       <div className="flex items-center justify-center h-64">
         <div className="relative">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-          <div className="absolute inset-0 rounded-full bg-blue-50 animate-pulse"></div>
         </div>
       </div>
     )
@@ -106,7 +105,7 @@ export default function ViewEmployeePage() {
               <FiArrowLeft className="h-6 w-6 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-gray-900">
                 Employee Details
               </h1>
               <p className="mt-2 text-gray-600">
@@ -118,7 +117,7 @@ export default function ViewEmployeePage() {
           {(user.role === 'admin' || user.role === 'manager') && (
             <button
               onClick={() => router.push(`/employees/${employeeId}/edit`)}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 flex items-center transition-colors duration-200 shadow-lg font-medium"
             >
               <FiEdit className="mr-2" />
               Edit Employee
@@ -127,7 +126,7 @@ export default function ViewEmployeePage() {
         </div>
 
         {/* Employee Profile Card */}
-        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="bg-white shadow-lg rounded-2xl border border-gray-100">
           <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
             <div className="flex items-center space-x-6">
               <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-3xl shadow-lg">
@@ -144,10 +143,10 @@ export default function ViewEmployeePage() {
                   <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">
                     {employee.EmployeeCode}
                   </span>
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${
+                  <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
                     employee.IsActive 
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
-                      : 'bg-red-100 text-red-800 border-red-200'
+                      ? 'bg-emerald-100 text-emerald-800' 
+                      : 'bg-red-100 text-red-800'
                   }`}>
                     {employee.IsActive ? 'Active' : 'Inactive'}
                   </span>
@@ -160,7 +159,7 @@ export default function ViewEmployeePage() {
         {/* Employee Information Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Personal Information */}
-          <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="bg-white shadow-lg rounded-2xl border border-gray-100">
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <FiUser className="mr-3 text-green-600" />
@@ -208,7 +207,7 @@ export default function ViewEmployeePage() {
           </div>
 
           {/* Contact Information */}
-          <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="bg-white shadow-lg rounded-2xl border border-gray-100">
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-cyan-50">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <FiMail className="mr-3 text-blue-600" />
@@ -258,89 +257,35 @@ export default function ViewEmployeePage() {
           </div>
 
           {/* Work Information */}
-          <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="bg-white shadow-lg rounded-2xl border border-gray-100">
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <FiBriefcase className="mr-3 text-purple-600" />
                 Work Information
               </h3>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Company</label>
-                  <p className="text-gray-900 font-medium">{employee.CompanyName || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Department</label>
-                  <p className="text-gray-900 font-medium">{employee.DepartmentName || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Designation</label>
-                  <p className="text-gray-900 font-medium">{employee.DesignationName || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Date of Joining</label>
-                  <div className="flex items-center space-x-2">
-                    <FiClock className="h-4 w-4 text-gray-400" />
-                    <p className="text-gray-900 font-medium">{formatDate(employee.DateOfJoining)}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Account Created</label>
-                  <div className="flex items-center space-x-2">
-                    <FiClock className="h-4 w-4 text-gray-400" />
-                    <p className="text-gray-900 font-medium">{formatDate(employee.CreatedAt)}</p>
-                  </div>
-                </div>
-              </div>
-            </div> 
-             <div className="flex items-center space-x-2">
-                  <FiPhone className="h-4 w-4 text-gray-400" />
-                  <a 
-                    href={`tel:${employee.MobileNumber}`}
-                    className="text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    {employee.MobileNumber || 'N/A'}
-                  </a>
-                </div>
-              </div>
-            </div>
-
-          {/* Work Information */}
-          <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <FiBriefcase className="mr-3 text-purple-600" />
-                Work Information
-              </h3>
-            </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-500 mb-1">Company</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Company</label>
                 <p className="text-gray-900 font-medium">{employee.CompanyName || 'N/A'}</p>
               </div>
-
               <div>
-                <label className="block text-sm font-semibold text-gray-500 mb-1">Department</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Department</label>
                 <p className="text-gray-900 font-medium">{employee.DepartmentName || 'N/A'}</p>
               </div>
-
               <div>
-                <label className="block text-sm font-semibold text-gray-500 mb-1">Designation</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Designation</label>
                 <p className="text-gray-900 font-medium">{employee.DesignationName || 'N/A'}</p>
               </div>
-
               <div>
-                <label className="block text-sm font-semibold text-gray-500 mb-1">Date of Joining</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Date of Joining</label>
                 <div className="flex items-center space-x-2">
                   <FiClock className="h-4 w-4 text-gray-400" />
                   <p className="text-gray-900 font-medium">{formatDate(employee.DateOfJoining)}</p>
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-semibold text-gray-500 mb-1">Account Created</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Account Created</label>
                 <div className="flex items-center space-x-2">
                   <FiClock className="h-4 w-4 text-gray-400" />
                   <p className="text-gray-900 font-medium">{formatDate(employee.CreatedAt)}</p>
@@ -350,22 +295,22 @@ export default function ViewEmployeePage() {
           </div>
 
           {/* Location Information */}
-          <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-red-50">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+          <div className="bg-white shadow-lg rounded-2xl border border-gray-100">
+            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-red-50">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <FiMapPin className="mr-3 text-orange-600" />
                 Location Information
               </h3>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-500 mb-1">Work Location</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Work Location</label>
                 <p className="text-gray-900 font-medium">{employee.LocationName || 'N/A'}</p>
               </div>
 
               {employee.Latitude && employee.Longitude && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-500 mb-1">Coordinates</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Coordinates</label>
                   <p className="text-gray-900 font-medium">
                     {employee.Latitude}, {employee.Longitude}
                   </p>
@@ -374,12 +319,13 @@ export default function ViewEmployeePage() {
 
               {employee.AllowedRadius && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-500 mb-1">Allowed Radius</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Allowed Radius</label>
                   <p className="text-gray-900 font-medium">{employee.AllowedRadius} meters</p>
                 </div>
               )}
             </div>
           </div>
+        </div>
       </div>
     </div>
   );

@@ -236,7 +236,7 @@ export default function DepartmentsPage() {
                           required
                           value={formData.departmentCode}
                           onChange={(e) => setFormData({...formData, departmentCode: e.target.value.toUpperCase()})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black"
                           placeholder="HR, IT, SALES"
                         />
                       </div>
@@ -249,7 +249,7 @@ export default function DepartmentsPage() {
                         required
                         value={formData.departmentName}
                         onChange={(e) => setFormData({...formData, departmentName: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black"
                         placeholder="Human Resources"
                       />
                     </div>
@@ -260,7 +260,7 @@ export default function DepartmentsPage() {
                         type="number"
                         value={formData.budget}
                         onChange={(e) => setFormData({...formData, budget: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black"
                         placeholder="1000000"
                       />
                     </div>

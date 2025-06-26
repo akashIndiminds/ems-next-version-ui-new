@@ -1,4 +1,4 @@
-// src/lib/api.js
+// src/lib/api.js (Complete version with all integrations)
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -16,7 +16,7 @@ const api = axios.create({
 // Request interceptor to add token
 api.interceptors.request.use(
   (config) => {
-    const token = Cookies.get('token'); // Using same cookie name as your AuthContext
+    const token = Cookies.get('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,7 +33,6 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       if (error.response.status === 401) {
-        // Token expired or invalid
         Cookies.remove('token');
         Cookies.remove('user');
         window.location.href = '/login';
@@ -49,8 +48,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// Remove helper functions as you're managing auth in AuthContext
 
 // Auth APIs
 export const authAPI = {
@@ -75,9 +72,7 @@ export const attendanceAPI = {
   checkIn: (data) => api.post('/attendance/checkin', data),
   checkOut: (data) => api.post('/attendance/checkout', data),
   getRecords: (params) => api.get('/attendance/records', { params }),
-  // Fixed: Only pass employeeId once
   getTodayStatus: (employeeId) => {
-    // Ensure employeeId is a single value, not an array
     const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
     return api.get(`/attendance/today/${id}`);
   },
@@ -88,7 +83,6 @@ export const companyAPI = {
   getAll: (params) => api.get('/companies', { params }),
   getById: (id) => api.get(`/companies/${id}`),
   getDashboard: (id) => {
-    // Ensure companyId is a single value
     const companyId = Array.isArray(id) ? id[0] : id;
     return api.get(`/companies/${companyId}/dashboard`);
   },
@@ -127,6 +121,52 @@ export const leaveAPI = {
   getPending: (params) => api.get('/leaves/pending', { params }),
 };
 
+// Leave Balance APIs - COMPLETE IMPLEMENTATION
+export const leaveBalanceAPI = {
+  // Get all leave types
+  getLeaveTypes: () => api.get('/leave-balance/leave-types'),
+  
+  // Get employee leave balance
+  getBalance: (employeeId, year) => {
+    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+    const params = year ? { year } : {};
+    return api.get(`/leave-balance/balance/${id}`, { params });
+  },
+  
+  // Initialize leave balance for an employee
+  initialize: (employeeId, year) => {
+    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+    return api.post('/leave-balance/initialize', { 
+      employeeId: id, 
+      year: year || new Date().getFullYear() 
+    });
+  },
+  
+  // Adjust leave balance
+  adjust: (data) => api.post('/leave-balance/adjust', data),
+  
+  // Bulk initialize for company
+  bulkInitialize: (companyId, year) => {
+    const id = Array.isArray(companyId) ? companyId[0] : companyId;
+    return api.post('/leave-balance/bulk-initialize', { 
+      companyId: id, 
+      year: year || new Date().getFullYear() 
+    });
+  },
+  
+  // Get company summary
+  getSummary: (params) => {
+    const companyId = Array.isArray(params.companyId) ? params.companyId[0] : params.companyId;
+    return api.get(`/leave-balance/summary/${companyId}`, { 
+      params: { year: params.year } 
+    });
+  },
+  
+  // Carry forward balance
+  carryForward: (fromYear, toYear) => 
+    api.post('/leave-balance/carry-forward', { fromYear, toYear })
+};
+
 // Location APIs
 export const locationAPI = {
   getAll: (params) => api.get('/locations', { params }),
@@ -140,6 +180,41 @@ export const paymentAPI = {
   createOrder: (data) => api.post('/payments/create-order', data),
   verify: (data) => api.post('/payments/verify', data),
   getHistory: (params) => api.get('/payments/history', { params }),
+};
+
+// Dropdown APIs
+export const dropdownAPI = {
+  // Get multiple dropdowns in one call
+  getMultiple: (types, filters = {}) => {
+    const params = { types: types.join(','), ...filters };
+    return api.get('/dropdowns', { params });
+  },
+  
+  // Individual dropdown endpoints
+  getCompanies: () => api.get('/dropdowns/companies'),
+  getDepartments: (companyId) => {
+    const params = companyId ? { companyId } : {};
+    return api.get('/dropdowns/departments', { params });
+  },
+  getDesignations: () => api.get('/dropdowns/designations'),
+  getLocations: (companyId) => {
+    const params = companyId ? { companyId } : {};
+    return api.get('/dropdowns/locations', { params });
+  },
+  getEmployees: (companyId, departmentId) => {
+    const params = {};
+    if (companyId) params.companyId = companyId;
+    if (departmentId) params.departmentId = departmentId;
+    return api.get('/dropdowns/employees', { params });
+  },
+  getLeaveTypes: () => api.get('/dropdowns/leave-types'),
+  getShiftTypes: () => api.get('/dropdowns/shift-types'),
+  getManagers: (companyId) => {
+    const params = companyId ? { companyId } : {};
+    return api.get('/dropdowns/managers', { params });
+  },
+  getStaticDropdowns: () => api.get('/dropdowns/static'),
+  getSubscriptionPlans: () => api.get('/dropdowns/subscription-plans'),
 };
 
 export default api;

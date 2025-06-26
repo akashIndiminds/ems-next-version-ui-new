@@ -30,6 +30,7 @@ export default function AddEmployeePage() {
     emergencyContact: '',
     bloodGroup: ''
   });
+  
 
   useEffect(() => {
     if (user?.role === 'employee') {
@@ -172,7 +173,7 @@ export default function AddEmployeePage() {
                     required
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black"
                     placeholder="Enter first name"
                   />
                 </div>
@@ -186,7 +187,7 @@ export default function AddEmployeePage() {
                     required
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                     placeholder="Enter last name"
                   />
                 </div>
@@ -203,7 +204,7 @@ export default function AddEmployeePage() {
                       type="date"
                       value={formData.dateOfBirth}
                       onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                     />
                   </div>
                 </div>
@@ -213,7 +214,7 @@ export default function AddEmployeePage() {
                   <select
                     value={formData.gender}
                     onChange={(e) => handleInputChange('gender', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -232,7 +233,7 @@ export default function AddEmployeePage() {
                     <select
                       value={formData.bloodGroup}
                       onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                     >
                       <option value="">Select Blood Group</option>
                       {bloodGroups.map(group => (
@@ -254,7 +255,7 @@ export default function AddEmployeePage() {
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
                       rows={3}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                       placeholder="Enter full address"
                     />
                   </div>
@@ -281,7 +282,7 @@ export default function AddEmployeePage() {
                       required
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                       placeholder="Enter email address"
                     />
                   </div>
@@ -299,7 +300,7 @@ export default function AddEmployeePage() {
                       type="tel"
                       value={formData.mobileNumber}
                       onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                       placeholder="Enter mobile number"
                     />
                   </div>
@@ -317,7 +318,7 @@ export default function AddEmployeePage() {
                       type="tel"
                       value={formData.emergencyContact}
                       onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                       placeholder="Enter emergency contact"
                     />
                   </div>
@@ -336,7 +337,7 @@ export default function AddEmployeePage() {
                       required
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                       placeholder="Minimum 6 characters"
                     />
                   </div>
@@ -359,7 +360,7 @@ export default function AddEmployeePage() {
                     required
                     value={formData.departmentId}
                     onChange={(e) => handleInputChange('departmentId', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                   >
                     <option value="">Select Department</option>
                     {departments.map(dept => (
@@ -383,7 +384,7 @@ export default function AddEmployeePage() {
                       required
                       value={formData.dateOfJoining}
                       onChange={(e) => handleInputChange('dateOfJoining', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
                     />
                   </div>
                 </div>

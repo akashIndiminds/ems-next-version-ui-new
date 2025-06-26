@@ -19,7 +19,6 @@ export default function EditEmployeePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // 🔧 FIX: Initial state mein isActive undefined rakha, actual value load hone tak
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -31,7 +30,7 @@ export default function EditEmployeePage() {
     dateOfBirth: '',
     dateOfJoining: '',
     gender: 'Male',
-    isActive: undefined, // ✅ Initially undefined, actual value se set hoga
+    isActive: undefined,
     employeeCode: '',
     address: '',
     emergencyContact: '',
@@ -63,8 +62,6 @@ export default function EditEmployeePage() {
           return date.toISOString().split('T')[0];
         };
 
-        // 🔧 FIX: Database se actual IsActive value set kar rahe hain
-        // Database se true/false ya 1/0 dono handle kar rahe hain
         const actualIsActive = emp.IsActive === true || emp.IsActive === 1;
         
         console.log('🔍 Employee Status Debug:', {
@@ -85,7 +82,7 @@ export default function EditEmployeePage() {
           dateOfBirth: formatDate(emp.DateOfBirth),
           dateOfJoining: formatDate(emp.DateOfJoining),
           gender: emp.Gender || 'Male',
-          isActive: actualIsActive, // ✅ Actual database value
+          isActive: actualIsActive,
           employeeCode: emp.EmployeeCode || '',
           address: emp.Address || '',
           emergencyContact: emp.EmergencyContact || '',
@@ -137,7 +134,7 @@ export default function EditEmployeePage() {
         DateOfBirth: formData.dateOfBirth || null,
         DateOfJoining: formData.dateOfJoining || null,
         Gender: formData.gender,
-        IsActive: formData.isActive ? 1 : 0, // ✅ Correct conversion
+        IsActive: formData.isActive ? 1 : 0,
         Address: formData.address.trim(),
         EmergencyContact: formData.emergencyContact.trim(),
         BloodGroup: formData.bloodGroup
@@ -165,7 +162,6 @@ export default function EditEmployeePage() {
   };
 
   const handleInputChange = (field, value) => {
-    // 🔧 FIX: Status change ki debug logging
     if (field === 'isActive') {
       console.log('📝 Status Change:', {
         'Previous': formData.isActive,
@@ -180,13 +176,11 @@ export default function EditEmployeePage() {
     }));
   };
 
-  // 🔧 FIX: Loading state mein proper skeleton
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="relative">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-          <div className="absolute inset-0 rounded-full bg-blue-50 animate-pulse"></div>
         </div>
       </div>
     );
@@ -208,7 +202,6 @@ export default function EditEmployeePage() {
     );
   }
 
-  // 🔧 FIX: Form data load hone tak wait karo
   if (formData.isActive === undefined) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -233,7 +226,7 @@ export default function EditEmployeePage() {
               <FiArrowLeft className="h-6 w-6 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-gray-900">
                 Edit Employee
               </h1>
               <p className="mt-1 text-gray-600">
@@ -247,7 +240,6 @@ export default function EditEmployeePage() {
             <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">
               {employee.EmployeeCode}
             </span>
-            {/* 🔧 FIX: Current status indicator */}
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
               formData.isActive 
                 ? 'bg-green-100 text-green-800' 
@@ -259,7 +251,7 @@ export default function EditEmployeePage() {
         </div>
 
         {/* Employee Info Card */}
-        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="bg-white shadow-lg rounded-2xl border border-gray-100">
           <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
             <div className="flex items-center space-x-4">
               <div className="h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-xl shadow-lg">
@@ -270,7 +262,6 @@ export default function EditEmployeePage() {
                   {employee.FirstName} {employee.LastName}
                 </h2>
                 <p className="text-gray-600">{employee.DepartmentName}</p>
-                {/* 🔧 FIX: Database status display */}
                 <p className={`text-sm font-medium ${
                   employee.IsActive === true || employee.IsActive === 1 ? 'text-green-600' : 'text-red-600'
                 }`}>
@@ -300,7 +291,7 @@ export default function EditEmployeePage() {
                       required
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder-gray-500"
                     />
                   </div>
 
@@ -313,7 +304,7 @@ export default function EditEmployeePage() {
                       required
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder-gray-500"
                     />
                   </div>
 
@@ -322,7 +313,7 @@ export default function EditEmployeePage() {
                     <select
                       value={formData.gender}
                       onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                     >
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -336,7 +327,7 @@ export default function EditEmployeePage() {
                       type="date"
                       value={formData.dateOfBirth}
                       onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                     />
                   </div>
 
@@ -345,7 +336,7 @@ export default function EditEmployeePage() {
                     <select
                       value={formData.bloodGroup}
                       onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                     >
                       <option value="">Select Blood Group</option>
                       {bloodGroups.map(group => (
@@ -373,7 +364,7 @@ export default function EditEmployeePage() {
                       required
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder-gray-500"
                     />
                   </div>
 
@@ -383,7 +374,7 @@ export default function EditEmployeePage() {
                       type="tel"
                       value={formData.mobileNumber}
                       onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder-gray-500"
                     />
                   </div>
 
@@ -393,7 +384,7 @@ export default function EditEmployeePage() {
                       type="tel"
                       value={formData.emergencyContact}
                       onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder-gray-500"
                     />
                   </div>
 
@@ -403,7 +394,7 @@ export default function EditEmployeePage() {
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white placeholder-gray-500"
                       placeholder="Enter full address"
                     />
                   </div>
@@ -426,7 +417,7 @@ export default function EditEmployeePage() {
                       required
                       value={formData.departmentId}
                       onChange={(e) => handleInputChange('departmentId', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                     >
                       <option value="">Select Department</option>
                       {departments.map(dept => (
@@ -443,11 +434,10 @@ export default function EditEmployeePage() {
                       type="date"
                       value={formData.dateOfJoining}
                       onChange={(e) => handleInputChange('dateOfJoining', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                     />
                   </div>
 
-                  {/* 🔧 FIX: Improved Status Section with Current Value Display */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Employee Status
@@ -463,7 +453,7 @@ export default function EditEmployeePage() {
                             name="status"
                             checked={formData.isActive === true}
                             onChange={() => handleInputChange('isActive', true)}
-                            className="form-radio h-4 w-4 text-green-600 focus:ring-green-500"
+                            className="form-radio h-4 w-4 text-green-600"
                           />
                           <span className="ml-2 text-sm text-gray-700 font-medium">
                             ✅ Active
@@ -475,7 +465,7 @@ export default function EditEmployeePage() {
                             name="status"
                             checked={formData.isActive === false}
                             onChange={() => handleInputChange('isActive', false)}
-                            className="form-radio h-4 w-4 text-red-600 focus:ring-red-500"
+                            className="form-radio h-4 w-4 text-red-600"
                           />
                           <span className="ml-2 text-sm text-gray-700 font-medium">
                             ❌ Inactive
@@ -490,7 +480,6 @@ export default function EditEmployeePage() {
 
             {/* Note & Action Buttons */}
             <div className="mt-6 pt-4 border-t border-gray-200">
-              {/* 🔧 FIX: Status change warning */}
               {formData.isActive !== (employee.IsActive === true || employee.IsActive === 1) && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                   <div className="text-sm text-yellow-700">
@@ -511,14 +500,14 @@ export default function EditEmployeePage() {
                 <button
                   type="button"
                   onClick={() => router.push('/employees')}
-                  className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                  className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center"
                 >
                   {saving ? (
                     <>
