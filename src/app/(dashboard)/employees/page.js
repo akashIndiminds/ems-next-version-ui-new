@@ -41,7 +41,7 @@ export default function EmployeesPage() {
       const response = await employeeAPI.getAll({
         companyId: user.company.companyId,
         page: currentPage,
-        limit: 50 // Fetch more for client-side filtering
+        limit: 50
       });
       if (response.data.success) {
         setEmployees(response.data.data);
@@ -91,7 +91,6 @@ export default function EmployeesPage() {
 
   const handleFilterChange = (key, value) => {
     if (key === null) {
-      // Clear all filters
       setActiveFilters(value);
     } else {
       setActiveFilters(prev => ({
@@ -99,10 +98,9 @@ export default function EmployeesPage() {
         [key]: value
       }));
     }
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1);
   };
 
-  // Default filter configuration if employeeFilters is not available
   const defaultFilters = [
     {
       key: 'department',
@@ -141,7 +139,6 @@ export default function EmployeesPage() {
     }
   ];
 
-  // Create filter options with departments - handle undefined employeeFilters
   const filterConfig = (employeeFilters || defaultFilters).map(filter => {
     if (filter.key === 'department') {
       return {
@@ -155,9 +152,7 @@ export default function EmployeesPage() {
     return filter;
   });
 
-  // Filter employees based on search and filters
   const filteredEmployees = employees.filter(emp => {
-    // Search filter
     const matchesSearch = !searchTerm || 
       emp.FullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.FirstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -165,26 +160,21 @@ export default function EmployeesPage() {
       emp.Email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.EmployeeCode?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Department filter
     const matchesDepartment = !activeFilters.department || 
       emp.DepartmentID?.toString() === activeFilters.department;
 
-    // Status filter
     const matchesStatus = !activeFilters.status || 
       emp.IsActive?.toString() === activeFilters.status;
 
-    // Blood group filter
     const matchesBloodGroup = !activeFilters.bloodGroup || 
       emp.BloodGroup === activeFilters.bloodGroup;
 
-    // Joining date filter
     const matchesJoiningDate = !activeFilters.joiningDate || 
       (emp.DateOfJoining && new Date(emp.DateOfJoining) >= new Date(activeFilters.joiningDate));
 
     return matchesSearch && matchesDepartment && matchesStatus && matchesBloodGroup && matchesJoiningDate;
   });
 
-  // Pagination
   const totalItems = filteredEmployees.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -210,7 +200,7 @@ export default function EmployeesPage() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
               Employee Management
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-gray-700">
               Manage your organization's employees
             </p>
           </div>
@@ -240,7 +230,7 @@ export default function EmployeesPage() {
               <FiUsers className="mr-3 text-blue-600" />
               Employees ({filteredEmployees.length})
               {searchTerm || Object.values(activeFilters).some(v => v) ? (
-                <span className="ml-2 text-sm font-normal text-gray-600">
+                <span className="ml-2 text-sm font-normal text-gray-700">
                   (filtered from {employees.length} total)
                 </span>
               ) : null}
@@ -273,7 +263,10 @@ export default function EmployeesPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedEmployees.map((employee, index) => (
-                  <tr key={employee.EmployeeID} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <tr
+                    key={employee.EmployeeID}
+                    className={`transition-colors duration-150 ${index % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -285,17 +278,17 @@ export default function EmployeesPage() {
                           <div className="text-sm font-semibold text-gray-900">
                             {employee.FullName || `${employee.FirstName} ${employee.LastName}`}
                           </div>
-                          <div className="text-sm text-gray-600">{employee.Email}</div>
+                          <div className="text-sm text-gray-700">{employee.Email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                       {employee.EmployeeCode}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {employee.DepartmentName || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {employee.MobileNumber || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -308,27 +301,27 @@ export default function EmployeesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-1">
+                      <div className="flex justify-end space-x-2">
                         <button
                           onClick={() => router.push(`/employees/${employee.EmployeeID}/view`)}
                           className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors duration-200"
                           title="View Details"
                         >
-                          <FiEye className="h-4 w-4" />
+                          <FiEye className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => router.push(`/employees/${employee.EmployeeID}/edit`)}
                           className="text-indigo-600 hover:text-indigo-800 p-2 rounded-lg hover:bg-indigo-50 transition-colors duration-200"
                           title="Edit Employee"
                         >
-                          <FiEdit className="h-4 w-4" />
+                          <FiEdit className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => openDeleteDialog(employee)}
                           className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200"
                           title="Delete Employee"
                         >
-                          <FiTrash2 className="h-4 w-4" />
+                          <FiTrash2 className="h-5 w-5" />
                         </button>
                       </div>
                     </td>
@@ -341,7 +334,7 @@ export default function EmployeesPage() {
               <div className="text-center py-12">
                 <FiUsers className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No employees found</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-700">
                   {searchTerm || Object.values(activeFilters).some(v => v) ? 
                     'Try adjusting your search terms or filters.' : 
                     'Get started by adding a new employee.'
@@ -362,7 +355,6 @@ export default function EmployeesPage() {
             )}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200">
               <Pagination
@@ -376,7 +368,6 @@ export default function EmployeesPage() {
           )}
         </div>
 
-        {/* Delete Alert Dialog */}
         <DeleteAlert
           isOpen={showDeleteAlert}
           onClose={() => {

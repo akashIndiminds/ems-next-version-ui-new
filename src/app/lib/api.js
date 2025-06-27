@@ -1,4 +1,4 @@
-// src/lib/api.js (Complete version with all integrations)
+// src/lib/api.js (Updated version with department-designation mapping)
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -65,6 +65,11 @@ export const employeeAPI = {
   create: (data) => api.post('/employees', data),
   update: (id, data) => api.put(`/employees/${id}`, data),
   delete: (id) => api.delete(`/employees/${id}`),
+  
+  // NEW: Get designations by department
+  getDesignationsByDepartment: (departmentId) => {
+    return api.get(`/dropdowns/departments/${departmentId}/designations`);
+  }
 };
 
 // Attendance APIs
@@ -103,6 +108,11 @@ export const departmentAPI = {
   create: (data) => api.post('/departments', data),
   update: (id, data) => api.put(`/departments/${id}`, data),
   delete: (id) => api.delete(`/departments/${id}`),
+  
+  // NEW: Get designations for specific department
+  getDesignations: (departmentId) => {
+    return api.get(`/dropdowns/departments/${departmentId}/designations`);
+  }
 };
 
 // Leave APIs
@@ -182,7 +192,7 @@ export const paymentAPI = {
   getHistory: (params) => api.get('/payments/history', { params }),
 };
 
-// Dropdown APIs
+// Enhanced Dropdown APIs with Department-Designation Mapping
 export const dropdownAPI = {
   // Get multiple dropdowns in one call
   getMultiple: (types, filters = {}) => {
@@ -192,29 +202,76 @@ export const dropdownAPI = {
   
   // Individual dropdown endpoints
   getCompanies: () => api.get('/dropdowns/companies'),
+  
   getDepartments: (companyId) => {
     const params = companyId ? { companyId } : {};
     return api.get('/dropdowns/departments', { params });
   },
-  getDesignations: () => api.get('/dropdowns/designations'),
+  
+  getDesignations: (departmentId) => {
+    // If departmentId is provided, get department-specific designations
+    // Otherwise, get all designations
+    const params = departmentId ? { departmentId } : {};
+    return api.get('/dropdowns/designations', { params });
+  },
+  
+  // NEW: Get designations specifically mapped to a department
+  getDesignationsByDepartment: (departmentId) => {
+    return api.get(`/dropdowns/departments/${departmentId}/designations`);
+  },
+  
   getLocations: (companyId) => {
     const params = companyId ? { companyId } : {};
     return api.get('/dropdowns/locations', { params });
   },
+  
   getEmployees: (companyId, departmentId) => {
     const params = {};
     if (companyId) params.companyId = companyId;
     if (departmentId) params.departmentId = departmentId;
     return api.get('/dropdowns/employees', { params });
   },
+  
   getLeaveTypes: () => api.get('/dropdowns/leave-types'),
   getShiftTypes: () => api.get('/dropdowns/shift-types'),
+  
   getManagers: (companyId) => {
     const params = companyId ? { companyId } : {};
     return api.get('/dropdowns/managers', { params });
   },
+  
   getStaticDropdowns: () => api.get('/dropdowns/static'),
   getSubscriptionPlans: () => api.get('/dropdowns/subscription-plans'),
+  
+  // Helper method for getting dropdown data with enhanced department-designation logic
+  async getDepartmentDesignationData(companyId) {
+    try {
+      const [departmentsRes, allDesignationsRes] = await Promise.all([
+        this.getDepartments(companyId),
+        this.getDesignations()
+      ]);
+      
+      return {
+        departments: departmentsRes.data.data || [],
+        allDesignations: allDesignationsRes.data.data || []
+      };
+    } catch (error) {
+      console.error('Error fetching department-designation data:', error);
+      throw error;
+    }
+  },
+  
+  // Helper method to get designations for specific department with fallback
+  async getDesignationsForDepartment(departmentId) {
+    try {
+      const response = await this.getDesignationsByDepartment(departmentId);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching designations for department:', error);
+      // Return empty array if no designations found for department
+      return [];
+    }
+  }
 };
 
 export default api;

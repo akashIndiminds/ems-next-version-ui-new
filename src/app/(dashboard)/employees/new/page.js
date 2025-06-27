@@ -5,22 +5,26 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { departmentAPI, authAPI } from '@/app/lib/api';
-import { FiArrowLeft, FiSave, FiUser, FiMail, FiPhone, FiCalendar, FiLock, FiMapPin, FiHeart } from 'react-icons/fi';
+import { FiArrowLeft, FiSave, FiUser, FiMail, FiPhone, FiCalendar, FiLock, FiMapPin, FiHeart, FiBriefcase } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function AddEmployeePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingDesignations, setLoadingDesignations] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showCustomDesignation, setShowCustomDesignation] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     mobileNumber: '',
     departmentId: '',
-    designationId: '1', // Default designation
+    designationId: '',
+    customDesignation: '',
     locationId: '1', // Default location
     password: '',
     dateOfBirth: '',
@@ -30,7 +34,6 @@ export default function AddEmployeePage() {
     emergencyContact: '',
     bloodGroup: ''
   });
-  
 
   useEffect(() => {
     if (user?.role === 'employee') {
@@ -43,6 +46,7 @@ export default function AddEmployeePage() {
     setFormData(prev => ({ ...prev, dateOfJoining: today }));
   }, [user]);
 
+  // Fetch departments
   const fetchDepartments = async () => {
     try {
       setLoading(true);
@@ -55,6 +59,41 @@ export default function AddEmployeePage() {
       toast.error('Failed to load departments');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch designations based on selected department
+  const fetchDesignationsByDepartment = async (departmentId) => {
+    if (!departmentId) {
+      setDesignations([]);
+      setShowCustomDesignation(false);
+      return;
+    }
+
+    try {
+      setLoadingDesignations(true);
+      // Use the updated API method
+      const response = await departmentAPI.getDesignations(departmentId);
+      
+      if (response.data.success) {
+        setDesignations(response.data.data);
+        setShowCustomDesignation(response.data.data.length === 0);
+        
+        if (response.data.data.length === 0) {
+          toast.info('No designations found for this department. You can add a custom designation.');
+        }
+      } else {
+        setDesignations([]);
+        setShowCustomDesignation(true);
+        toast.info('No designations found for this department. You can add a custom designation.');
+      }
+    } catch (error) {
+      console.error('Error fetching designations:', error);
+      setDesignations([]);
+      setShowCustomDesignation(true);
+      toast.error('Failed to load designations. You can add a custom designation.');
+    } finally {
+      setLoadingDesignations(false);
     }
   };
 
@@ -79,9 +118,34 @@ export default function AddEmployeePage() {
       return;
     }
 
+    // Check designation selection
+    if (!showCustomDesignation && !formData.designationId) {
+      toast.error('Please select a designation');
+      return;
+    }
+
+    if (showCustomDesignation && !formData.customDesignation.trim()) {
+      toast.error('Please enter a custom designation');
+      return;
+    }
+
     try {
       setSaving(true);
-      const response = await authAPI.addEmployee(formData);
+      
+      // Prepare data for API
+      const employeeData = {
+        ...formData,
+        companyId: user.company.companyId
+      };
+
+      // Remove unnecessary fields based on designation type
+      if (showCustomDesignation) {
+        delete employeeData.designationId;
+      } else {
+        delete employeeData.customDesignation;
+      }
+
+      const response = await authAPI.addEmployee(employeeData);
       if (response.data.success) {
         toast.success('Employee added successfully!');
         router.push('/employees');
@@ -98,6 +162,31 @@ export default function AddEmployeePage() {
       ...prev,
       [field]: value
     }));
+
+    // Handle department change
+    if (field === 'departmentId') {
+      setFormData(prev => ({
+        ...prev,
+        designationId: '',
+        customDesignation: ''
+      }));
+      fetchDesignationsByDepartment(value);
+    }
+
+    // Handle designation selection
+    if (field === 'designationId' && value === 'custom') {
+      setShowCustomDesignation(true);
+      setFormData(prev => ({
+        ...prev,
+        designationId: ''
+      }));
+    } else if (field === 'designationId' && value !== 'custom') {
+      setShowCustomDesignation(false);
+      setFormData(prev => ({
+        ...prev,
+        customDesignation: ''
+      }));
+    }
   };
 
   const resetForm = () => {
@@ -108,7 +197,8 @@ export default function AddEmployeePage() {
       email: '',
       mobileNumber: '',
       departmentId: '',
-      designationId: '1',
+      designationId: '',
+      customDesignation: '',
       locationId: '1',
       password: '',
       dateOfBirth: '',
@@ -118,6 +208,8 @@ export default function AddEmployeePage() {
       emergencyContact: '',
       bloodGroup: ''
     });
+    setDesignations([]);
+    setShowCustomDesignation(false);
   };
 
   return (
@@ -173,7 +265,7 @@ export default function AddEmployeePage() {
                     required
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                     placeholder="Enter first name"
                   />
                 </div>
@@ -187,7 +279,7 @@ export default function AddEmployeePage() {
                     required
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                     placeholder="Enter last name"
                   />
                 </div>
@@ -204,7 +296,7 @@ export default function AddEmployeePage() {
                       type="date"
                       value={formData.dateOfBirth}
                       onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                     />
                   </div>
                 </div>
@@ -214,7 +306,7 @@ export default function AddEmployeePage() {
                   <select
                     value={formData.gender}
                     onChange={(e) => handleInputChange('gender', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -233,7 +325,7 @@ export default function AddEmployeePage() {
                     <select
                       value={formData.bloodGroup}
                       onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                     >
                       <option value="">Select Blood Group</option>
                       {bloodGroups.map(group => (
@@ -255,7 +347,7 @@ export default function AddEmployeePage() {
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
                       rows={3}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                       placeholder="Enter full address"
                     />
                   </div>
@@ -282,7 +374,7 @@ export default function AddEmployeePage() {
                       required
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                       placeholder="Enter email address"
                     />
                   </div>
@@ -300,7 +392,7 @@ export default function AddEmployeePage() {
                       type="tel"
                       value={formData.mobileNumber}
                       onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                       placeholder="Enter mobile number"
                     />
                   </div>
@@ -318,7 +410,7 @@ export default function AddEmployeePage() {
                       type="tel"
                       value={formData.emergencyContact}
                       onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                       placeholder="Enter emergency contact"
                     />
                   </div>
@@ -337,7 +429,7 @@ export default function AddEmployeePage() {
                       required
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                       placeholder="Minimum 6 characters"
                     />
                   </div>
@@ -348,7 +440,7 @@ export default function AddEmployeePage() {
               {/* Work Information */}
               <div className="space-y-6">
                 <div className="flex items-center space-x-2 mb-4">
-                  <FiCalendar className="h-5 w-5 text-purple-600" />
+                  <FiBriefcase className="h-5 w-5 text-purple-600" />
                   <h3 className="text-lg font-semibold text-gray-900">Work Information</h3>
                 </div>
 
@@ -360,7 +452,7 @@ export default function AddEmployeePage() {
                     required
                     value={formData.departmentId}
                     onChange={(e) => handleInputChange('departmentId', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                   >
                     <option value="">Select Department</option>
                     {departments.map(dept => (
@@ -370,6 +462,69 @@ export default function AddEmployeePage() {
                     ))}
                   </select>
                 </div>
+
+                {/* Designation Section */}
+                {formData.departmentId && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Designation <span className="text-red-500">*</span>
+                    </label>
+                    {loadingDesignations ? (
+                      <div className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-2"></div>
+                        <span className="text-gray-600">Loading designations...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {designations.length > 0 && !showCustomDesignation && (
+                          <select
+                            required
+                            value={formData.designationId}
+                            onChange={(e) => handleInputChange('designationId', e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
+                          >
+                            <option value="">Select Designation</option>
+                            {designations.map(designation => (
+                              <option key={designation.id} value={designation.id}>
+                                {designation.label} {designation.BaseSalary && `(₹${designation.BaseSalary.toLocaleString()})`}
+                              </option>
+                            ))}
+                            <option value="custom">Others (Specify Custom)</option>
+                          </select>
+                        )}
+
+                        {(showCustomDesignation || designations.length === 0) && (
+                          <div>
+                            <input
+                              type="text"
+                              required
+                              value={formData.customDesignation}
+                              onChange={(e) => handleInputChange('customDesignation', e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
+                              placeholder="Enter custom designation"
+                            />
+                            <p className="mt-1 text-xs text-blue-600">
+                              A new designation will be created and mapped to this department
+                            </p>
+                          </div>
+                        )}
+
+                        {designations.length > 0 && showCustomDesignation && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCustomDesignation(false);
+                              setFormData(prev => ({ ...prev, customDesignation: '' }));
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-800 underline"
+                          >
+                            ← Back to available designations
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -384,17 +539,23 @@ export default function AddEmployeePage() {
                       required
                       value={formData.dateOfJoining}
                       onChange={(e) => handleInputChange('dateOfJoining', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm  text-sm transition-all duration-200 text-black  "
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
                     />
                   </div>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">Additional Information</h4>
+                  <h4 className="font-semibold text-blue-900 mb-2">Designation Information</h4>
                   <div className="text-sm text-blue-700 space-y-1">
-                    <p>• Designation: Will be assigned default designation</p>
+                    {designations.length > 0 && (
+                      <p>• {designations.length} designation(s) available for this department</p>
+                    )}
+                    {designations.length === 0 && formData.departmentId && (
+                      <p>• No pre-defined designations found for this department</p>
+                    )}
+                    <p>• Custom designations will be automatically created</p>
+                    <p>• Employee Code: Will be auto-generated based on department</p>
                     <p>• Location: Will be assigned default work location</p>
-                    <p>• Employee Code: Will be auto-generated</p>
                     <p>• Status: Will be set to Active by default</p>
                   </div>
                 </div>
@@ -420,7 +581,7 @@ export default function AddEmployeePage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || loadingDesignations}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 py-3 px-6 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
                   {saving ? (
