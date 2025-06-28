@@ -251,8 +251,8 @@ export default function LeavesPage() {
                   </div>
                   <div className="mt-3 bg-gray-50 rounded-xl p-3 space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600 font-medium">Used:</span>
-                      <span className="font-semibold">{balance.UsedDays || 0} days</span>
+                      <span className="text-black font-medium">Used:</span>
+                      <span className="font-semibold text-black">{balance.UsedDays || 0} days</span>
                     </div>
                     {balance.CarryForwardDays > 0 && (
                       <div className="flex justify-between text-xs">

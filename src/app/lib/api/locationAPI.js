@@ -1,14 +1,14 @@
 // src/app/lib/api/locationAPI.js
-import apiClient from './apiClient';
+import apiClient from "../apiClient";
 
 export const locationAPI = {
   // Get all locations with filters
   getAll: async (params = {}) => {
     const searchParams = new URLSearchParams();
-    Object.keys(params).forEach(key => {
+    Object.keys(params).forEach((key) => {
       if (params[key]) searchParams.append(key, params[key]);
     });
-    
+
     return await apiClient.get(`/locations?${searchParams.toString()}`);
   },
 
@@ -19,7 +19,7 @@ export const locationAPI = {
 
   // Create new location
   create: async (locationData) => {
-    return await apiClient.post('/locations', locationData);
+    return await apiClient.post("/locations", locationData);
   },
 
   // Update location
@@ -33,52 +33,72 @@ export const locationAPI = {
   },
 
   // Validate location for geofencing
-  validateLocation: async (locationId, latitude, longitude, employeeId = null) => {
-    return await apiClient.post('/locations/validate', {
-      locationId,
-      latitude,
-      longitude,
-      employeeId
-    });
-  },
-
-  // Advanced geofencing validation
-  advancedValidation: async (locationId, latitude, longitude, employeeId, additionalChecks = {}) => {
-    return await apiClient.post('/locations/validate/advanced', {
+  validateLocation: async (
+    locationId,
+    latitude,
+    longitude,
+    employeeId = null
+  ) => {
+    return await apiClient.post("/locations/validate", {
       locationId,
       latitude,
       longitude,
       employeeId,
-      additionalChecks
+    });
+  },
+
+  // Advanced geofencing validation
+  advancedValidation: async (
+    locationId,
+    latitude,
+    longitude,
+    employeeId,
+    additionalChecks = {}
+  ) => {
+    return await apiClient.post("/locations/validate/advanced", {
+      locationId,
+      latitude,
+      longitude,
+      employeeId,
+      additionalChecks,
     });
   },
 
   // Get nearby locations
-  getNearby: async (latitude, longitude, maxDistance = 1000, companyId = null) => {
+  getNearby: async (
+    latitude,
+    longitude,
+    maxDistance = 1000,
+    companyId = null
+  ) => {
     const params = new URLSearchParams();
-    if (maxDistance) params.append('maxDistance', maxDistance);
-    if (companyId) params.append('companyId', companyId);
-    
-    return await apiClient.get(`/locations/nearby/${latitude}/${longitude}?${params.toString()}`);
+    if (maxDistance) params.append("maxDistance", maxDistance);
+    if (companyId) params.append("companyId", companyId);
+
+    return await apiClient.get(
+      `/locations/nearby/${latitude}/${longitude}?${params.toString()}`
+    );
   },
 
   // Get closest location
   getClosest: async (latitude, longitude, companyId) => {
-    return await apiClient.get(`/locations/closest/${latitude}/${longitude}?companyId=${companyId}`);
+    return await apiClient.get(
+      `/locations/closest/${latitude}/${longitude}?companyId=${companyId}`
+    );
   },
 
   // Validate multiple locations
   validateMultiple: async (locationIds, latitude, longitude) => {
-    return await apiClient.post('/locations/validate/multiple', {
+    return await apiClient.post("/locations/validate/multiple", {
       locationIds,
       latitude,
-      longitude
+      longitude,
     });
   },
 
   // Get locations with coordinates
   getWithCoordinates: async (companyId = null) => {
-    const params = companyId ? `?companyId=${companyId}` : '';
+    const params = companyId ? `?companyId=${companyId}` : "";
     return await apiClient.get(`/locations/coordinates/all${params}`);
   },
 
@@ -89,10 +109,13 @@ export const locationAPI = {
 
   // Calculate distance
   calculateDistance: async (lat1, lon1, lat2, lon2) => {
-    return await apiClient.post('/locations/distance/calculate', {
-      lat1, lon1, lat2, lon2
+    return await apiClient.post("/locations/distance/calculate", {
+      lat1,
+      lon1,
+      lat2,
+      lon2,
     });
-  }
+  },
 };
 
 // Geolocation utilities
@@ -101,7 +124,7 @@ export const geolocationUtils = {
   getCurrentPosition: (options = {}) => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser'));
+        reject(new Error("Geolocation is not supported by this browser"));
         return;
       }
 
@@ -109,7 +132,7 @@ export const geolocationUtils = {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 60000, // 1 minute
-        ...options
+        ...options,
       };
 
       navigator.geolocation.getCurrentPosition(
@@ -118,20 +141,21 @@ export const geolocationUtils = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
-            timestamp: position.timestamp
+            timestamp: position.timestamp,
           });
         },
         (error) => {
-          let message = 'Failed to get location';
+          let message = "Failed to get location";
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              message = 'Location permission denied. Please enable location access.';
+              message =
+                "Location permission denied. Please enable location access.";
               break;
             case error.POSITION_UNAVAILABLE:
-              message = 'Location information is unavailable.';
+              message = "Location information is unavailable.";
               break;
             case error.TIMEOUT:
-              message = 'Location request timed out. Please try again.';
+              message = "Location request timed out. Please try again.";
               break;
           }
           reject(new Error(message));
@@ -144,7 +168,7 @@ export const geolocationUtils = {
   // Watch position changes
   watchPosition: (callback, errorCallback, options = {}) => {
     if (!navigator.geolocation) {
-      errorCallback(new Error('Geolocation is not supported'));
+      errorCallback(new Error("Geolocation is not supported"));
       return null;
     }
 
@@ -152,7 +176,7 @@ export const geolocationUtils = {
       enableHighAccuracy: true,
       timeout: 5000,
       maximumAge: 30000,
-      ...options
+      ...options,
     };
 
     return navigator.geolocation.watchPosition(
@@ -161,7 +185,7 @@ export const geolocationUtils = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
-          timestamp: position.timestamp
+          timestamp: position.timestamp,
         });
       },
       errorCallback,
@@ -177,19 +201,22 @@ export const geolocationUtils = {
   },
 
   // Calculate distance (client-side)
-  calculateDistance: (lat1, lon1, lat2, lon2) => {
+  calculateDistance(lat1, lon1, lat2, lon2) {
+    const toRadians = (degrees) => degrees * (Math.PI / 180);
     const R = 6371000; // Earth's radius in meters
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const φ1 = toRadians(lat1);
+    const φ2 = toRadians(lat2);
+    const Δφ = toRadians(lat2 - lat1);
+    const Δλ = toRadians(lon2 - lon1);
 
-    return R * c;
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
   },
 
   // Format coordinates for display
@@ -197,14 +224,21 @@ export const geolocationUtils = {
     return {
       latitude: parseFloat(lat).toFixed(precision),
       longitude: parseFloat(lon).toFixed(precision),
-      display: `${parseFloat(lat).toFixed(precision)}, ${parseFloat(lon).toFixed(precision)}`
+      display: `${parseFloat(lat).toFixed(precision)}, ${parseFloat(
+        lon
+      ).toFixed(precision)}`,
     };
   },
 
   // Validate coordinates
   isValidCoordinate: (lat, lon) => {
-    return !isNaN(lat) && !isNaN(lon) && 
-           lat >= -90 && lat <= 90 && 
-           lon >= -180 && lon <= 180;
-  }
+    return (
+      !isNaN(lat) &&
+      !isNaN(lon) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lon >= -180 &&
+      lon <= 180
+    );
+  },
 };
