@@ -320,7 +320,7 @@ export default function ReportsPage() {
                     setReportType(e.target.value);
                     setReportData(null);
                   }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black"
                 >
                   <option value="attendance">📊 Attendance Report</option>
                   <option value="leave">🏖️ Leave Report</option>
@@ -335,7 +335,7 @@ export default function ReportsPage() {
                   <select
                     value={selectedDepartment}
                     onChange={(e) => setSelectedDepartment(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black"
                   >
                     <option value="all">All Departments</option>
                     {departments.map(dept => (
@@ -353,7 +353,7 @@ export default function ReportsPage() {
                   type="date"
                   value={dateRange.fromDate}
                   onChange={(e) => setDateRange({...dateRange, fromDate: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black"
                 />
               </div>
               
@@ -363,7 +363,7 @@ export default function ReportsPage() {
                   type="date"
                   value={dateRange.toDate}
                   onChange={(e) => setDateRange({...dateRange, toDate: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black"
                 />
               </div>
             </div>
@@ -460,44 +460,44 @@ export default function ReportsPage() {
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Bar/Line Chart */}
-              {reportData.chartData && (
-                <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                      <FiBarChart className="mr-3 text-blue-600" />
-                      {reportType === 'attendance' ? 'Daily Attendance Trend' : 'Analytics Overview'}
-                    </h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={reportData.chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                          <XAxis dataKey={Object.keys(reportData.chartData[0])[0]} stroke="#64748b" fontSize={12} />
-                          <YAxis stroke="#64748b" fontSize={12} />
-                          <Tooltip 
-                            contentStyle={{
-                              backgroundColor: 'white',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '12px',
-                              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-                            }}
-                          />
-                          <Legend />
-                          {Object.keys(reportData.chartData[0]).slice(1).map((key, index) => (
-                            <Bar 
-                              key={key} 
-                              dataKey={key} 
-                              fill={COLORS[index % COLORS.length]} 
-                              radius={[4, 4, 0, 0]}
-                            />
-                          ))}
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </div>
-              )}
+           {reportData.chartData && reportData.chartData.length > 0 && (
+  <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+    <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+        <FiBarChart className="mr-3 text-blue-600" />
+        {reportType === 'attendance' ? 'Daily Attendance Trend' : 'Analytics Overview'}
+      </h3>
+    </div>
+    <div className="p-6">
+      <div className="h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={reportData.chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis dataKey={Object.keys(reportData.chartData[0])[0]} stroke="#64748b" fontSize={12} />
+            <YAxis stroke="#64748b" fontSize={12} />
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              }}
+            />
+            <Legend />
+            {Object.keys(reportData.chartData[0]).slice(1).map((key, index) => (
+              <Bar 
+                key={key} 
+                dataKey={key} 
+                fill={COLORS[index % COLORS.length]} 
+                radius={[4, 4, 0, 0]}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  </div>
+)}
 
               {/* Pie Chart */}
               {reportData.pieData && (
