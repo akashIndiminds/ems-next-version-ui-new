@@ -31,37 +31,50 @@ export default function EmployeesPage() {
       router.push('/dashboard');
       return;
     }
-    fetchEmployees();
-    fetchDepartments();
+    fetchData();
   }, [user]);
 
-  const fetchEmployees = async () => {
+  // Fetch both employees and departments in parallel and map them
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await employeeAPI.getAll({
-        companyId: user.company.companyId,
-        page: currentPage,
-        limit: 50
-      });
-      if (response.data.success) {
-        setEmployees(response.data.data);
+      
+      // Fetch employees and departments parallelly for better performance
+      const [employeesResponse, departmentsResponse] = await Promise.all([
+        employeeAPI.getAll({
+          companyId: user.company.companyId,
+          page: 1, // Fetch all data initially
+          limit: 100 // Increase limit or handle pagination
+        }),
+        departmentAPI.getByCompany(user.company.companyId)
+      ]);
+      
+      if (employeesResponse.data.success && departmentsResponse.data.success) {
+        const employeesData = employeesResponse.data.data;
+        const departmentsData = departmentsResponse.data.data;
+        
+        // Create department lookup map for O(1) access
+        const departmentMap = departmentsData.reduce((acc, dept) => {
+          acc[dept.DepartmentID] = dept.DepartmentName;
+          return acc;
+        }, {});
+        
+        // Map department names to employees
+        const enrichedEmployees = employeesData.map(employee => ({
+          ...employee,
+          DepartmentName: departmentMap[employee.DepartmentID] || 'Unassigned'
+        }));
+        
+        setEmployees(enrichedEmployees);
+        setDepartments(departmentsData);
+        
+        console.log('✅ Employees with departments mapped:', enrichedEmployees);
       }
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Failed to load employees');
+      console.error('❌ Error fetching data:', error);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchDepartments = async () => {
-    try {
-      const response = await departmentAPI.getByCompany(user.company.companyId);
-      if (response.data.success) {
-        setDepartments(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching departments:', error);
     }
   };
 
@@ -75,7 +88,7 @@ export default function EmployeesPage() {
         toast.success('Employee deleted successfully');
         setShowDeleteAlert(false);
         setEmployeeToDelete(null);
-        fetchEmployees();
+        fetchData(); // Refresh data after delete
       }
     } catch (error) {
       toast.error('Failed to delete employee');
@@ -133,52 +146,85 @@ export default function EmployeesPage() {
       ]
     },
     {
+      key: 'gender',
+      label: 'Gender',
+      type: 'select',
+      options: [
+        { value: 'Male', label: 'Male' },
+        { value: 'Female', label: 'Female' },
+        { value: 'Other', label: 'Other' }
+      ]
+    },
+    {
       key: 'joiningDate',
       label: 'Joined After',
       type: 'date'
     }
   ];
 
+  // Create filter config with department options
   const filterConfig = (employeeFilters || defaultFilters).map(filter => {
     if (filter.key === 'department') {
       return {
         ...filter,
-        options: departments.map(dept => ({
-          value: dept.DepartmentID.toString(),
-          label: dept.DepartmentName
-        }))
+        options: [
+          { value: 'unassigned', label: 'Unassigned' },
+          ...departments.map(dept => ({
+            value: dept.DepartmentID.toString(),
+            label: dept.DepartmentName
+          }))
+        ]
       };
     }
     return filter;
   });
 
+  // Enhanced filtering logic
   const filteredEmployees = employees.filter(emp => {
+    // Search filter
     const matchesSearch = !searchTerm || 
       emp.FullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.FirstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.LastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.Email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.EmployeeCode?.toLowerCase().includes(searchTerm.toLowerCase());
+      emp.EmployeeCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.DepartmentName?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    // Department filter - handle both assigned and unassigned
     const matchesDepartment = !activeFilters.department || 
+      (activeFilters.department === 'unassigned' && (!emp.DepartmentID || emp.DepartmentName === 'Unassigned')) ||
       emp.DepartmentID?.toString() === activeFilters.department;
 
+    // Status filter
     const matchesStatus = !activeFilters.status || 
       emp.IsActive?.toString() === activeFilters.status;
 
+    // Blood group filter
     const matchesBloodGroup = !activeFilters.bloodGroup || 
       emp.BloodGroup === activeFilters.bloodGroup;
 
+    // Gender filter
+    const matchesGender = !activeFilters.gender || 
+      emp.Gender === activeFilters.gender;
+
+    // Joining date filter
     const matchesJoiningDate = !activeFilters.joiningDate || 
       (emp.DateOfJoining && new Date(emp.DateOfJoining) >= new Date(activeFilters.joiningDate));
 
-    return matchesSearch && matchesDepartment && matchesStatus && matchesBloodGroup && matchesJoiningDate;
+    return matchesSearch && matchesDepartment && matchesStatus && 
+           matchesBloodGroup && matchesGender && matchesJoiningDate;
   });
 
   const totalItems = filteredEmployees.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + itemsPerPage);
+
+  // Helper function to format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-IN');
+  };
 
   if (loading) {
     return (
@@ -220,8 +266,63 @@ export default function EmployeesPage() {
           filters={filterConfig}
           activeFilters={activeFilters}
           onFilterChange={handleFilterChange}
-          placeholder="Search employees by name, email, or employee code..."
+          placeholder="Search employees by name, email, employee code, or department..."
         />
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FiUsers className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Total Employees</p>
+                <p className="text-2xl font-semibold text-gray-900">{employees.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <FiUsers className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Active</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {employees.filter(emp => emp.IsActive).length}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+            <div className="flex items-center">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <FiUsers className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Departments</p>
+                <p className="text-2xl font-semibold text-gray-900">{departments.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <FiUsers className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm text-gray-600">Unassigned</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {employees.filter(emp => !emp.DepartmentID || emp.DepartmentName === 'Unassigned').length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Employees Table */}
         <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
@@ -252,6 +353,9 @@ export default function EmployeesPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Joining Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Status
@@ -285,11 +389,20 @@ export default function EmployeesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                       {employee.EmployeeCode}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {employee.DepartmentName || 'N/A'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        employee.DepartmentName === 'Unassigned' 
+                          ? 'bg-gray-100 text-gray-800 border border-gray-300' 
+                          : 'bg-blue-100 text-blue-800 border border-blue-200'
+                      }`}>
+                        {employee.DepartmentName}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {employee.MobileNumber || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {formatDate(employee.DateOfJoining)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${

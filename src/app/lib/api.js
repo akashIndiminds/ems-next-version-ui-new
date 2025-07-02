@@ -178,13 +178,13 @@ export const leaveBalanceAPI = {
 };
 
 // Location APIs
+// Location APIs
 export const locationAPI = {
   getAll: (params) => api.get('/locations', { params }),
   getById: (id) => api.get(`/locations/${id}`),
   getNearby: (lat, lon, params) => api.get(`/locations/nearby/${lat}/${lon}`, { params }),
   validate: (data) => api.post('/locations/validate', data),
 };
-
 // Payment APIs
 export const paymentAPI = {
   createOrder: (data) => api.post('/payments/create-order', data),

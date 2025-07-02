@@ -12,6 +12,17 @@ export const locationAPI = {
     return await apiClient.get(`/locations?${searchParams.toString()}`);
   },
 
+
+   getByCompany: (companyId, params = {}) => {
+      const id = Array.isArray(companyId) ? companyId[0] : companyId;
+      return apiClient.get('/locations', { 
+        params: { 
+          companyId: id,
+          ...params 
+        } 
+      });
+    }, 
+
   // Get location by ID
   getById: async (id) => {
     return await apiClient.get(`/locations/${id}`);

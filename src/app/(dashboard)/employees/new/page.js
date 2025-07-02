@@ -4,17 +4,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { departmentAPI, authAPI } from '@/app/lib/api';
+import { departmentAPI, authAPI, dropdownAPI } from '@/app/lib/api';
 import { FiArrowLeft, FiSave, FiUser, FiMail, FiPhone, FiCalendar, FiLock, FiMapPin, FiHeart, FiBriefcase } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { locationAPI } from '@/app/lib/api/locationAPI';
 
 export default function AddEmployeePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingDesignations, setLoadingDesignations] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCustomDesignation, setShowCustomDesignation] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,7 +28,7 @@ export default function AddEmployeePage() {
     departmentId: '',
     designationId: '',
     customDesignation: '',
-    locationId: '1', // Default location
+    locationId: '',
     password: '',
     dateOfBirth: '',
     dateOfJoining: '',
@@ -40,16 +43,31 @@ export default function AddEmployeePage() {
       router.push('/dashboard');
       return;
     }
-    fetchDepartments();
+    fetchInitialData();
     // Set default joining date to today
     const today = new Date().toISOString().split('T')[0];
     setFormData(prev => ({ ...prev, dateOfJoining: today }));
   }, [user]);
 
+  // Fetch initial data (departments and locations)
+  const fetchInitialData = async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        fetchDepartments(),
+        fetchLocations()
+      ]);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      toast.error('Failed to load initial data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch departments
   const fetchDepartments = async () => {
     try {
-      setLoading(true);
       const response = await departmentAPI.getByCompany(user.company.companyId);
       if (response.data.success) {
         setDepartments(response.data.data);
@@ -57,10 +75,50 @@ export default function AddEmployeePage() {
     } catch (error) {
       console.error('Error fetching departments:', error);
       toast.error('Failed to load departments');
-    } finally {
-      setLoading(false);
     }
   };
+
+ // Replace fetchLocations function
+
+// Fetch locations using the correct API endpoint
+const fetchLocations = async () => {
+  try {
+    setLoadingLocations(true);
+    
+    // Use the locationAPI directly instead of dropdownAPI
+    const response = await locationAPI.getByCompany(user.company.companyId);
+    
+    if (response.data.success) {
+      setLocations(response.data.data);
+      
+      // Set first location as default if available
+      if (response.data.data.length > 0) {
+        setFormData(prev => ({ 
+          ...prev, 
+          locationId: response.data.data[0].LocationID.toString()
+        }));
+      }
+    } else {
+      setLocations([]);
+      toast.error('Failed to load locations');
+    }
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    setLocations([]);
+    
+    // Handle different error scenarios
+    if (error.response?.status === 404) {
+      toast.error('No locations found for your company. Please contact admin.');
+    } else if (error.response?.status === 403) {
+      toast.error('You do not have permission to view locations.');
+    } else {
+      toast.error('Failed to load locations. Please try again.');
+    }
+  } finally {
+    setLoadingLocations(false);
+  }
+};
+
 
   // Fetch designations based on selected department
   const fetchDesignationsByDepartment = async (departmentId) => {
@@ -72,8 +130,8 @@ export default function AddEmployeePage() {
 
     try {
       setLoadingDesignations(true);
-      // Use the updated API method
-      const response = await departmentAPI.getDesignations(departmentId);
+      // Use the dropdown API for department designations
+      const response = await dropdownAPI.getDesignationsByDepartment(departmentId);
       
       if (response.data.success) {
         setDesignations(response.data.data);
@@ -99,118 +157,149 @@ export default function AddEmployeePage() {
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-  const handleAddEmployee = async (e) => {
-    e.preventDefault();
+
+  
+const handleAddEmployee = async (e) => {
+  e.preventDefault();
+  
+  // Validation
+  if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.password.trim()) {
+    toast.error('Please fill in all required fields');
+    return;
+  }
+
+  if (formData.password.length < 6) {
+    toast.error('Password must be at least 6 characters long');
+    return;
+  }
+
+  if (!formData.departmentId) {
+    toast.error('Please select a department');
+    return;
+  }
+
+  if (!formData.locationId) {
+    toast.error('Please select a location');
+    return;
+  }
+
+  // Check designation selection
+  if (!showCustomDesignation && !formData.designationId) {
+    toast.error('Please select a designation');
+    return;
+  }
+
+  if (showCustomDesignation && !formData.customDesignation.trim()) {
+    toast.error('Please enter a custom designation');
+    return;
+  }
+
+  try {
+    setSaving(true);
     
-    // Validation
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.password.trim()) {
-      toast.error('Please fill in all required fields');
-      return;
+    // Prepare data for API - FIXED: Convert IDs to numbers
+    const employeeData = {
+      ...formData,
+      companyId: parseInt(user.company.companyId), // Convert to number
+      departmentId: parseInt(formData.departmentId), // Convert to number  
+      locationId: parseInt(formData.locationId) // Convert to number
+    };
+
+    // Handle designation - convert to number if not custom
+    if (showCustomDesignation) {
+      // For custom designation, remove designationId and keep customDesignation
+      delete employeeData.designationId;
+      // customDesignation will be sent as string (which is correct)
+    } else {
+      // For existing designation, convert ID to number and remove customDesignation
+      employeeData.designationId = parseInt(formData.designationId);
+      delete employeeData.customDesignation;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
-      return;
+    console.log('Employee data being sent:', employeeData); // Debug log
+
+    const response = await authAPI.addEmployee(employeeData);
+    if (response.data.success) {
+      toast.success('Employee added successfully!');
+      router.push('/employees');
     }
-
-    if (!formData.departmentId) {
-      toast.error('Please select a department');
-      return;
+  } catch (error) {
+    console.error('Error adding employee:', error);
+    
+    // Better error handling
+    if (error.response?.data?.message) {
+      toast.error(error.response.data.message);
+    } else if (error.response?.data?.error) {
+      toast.error(`Validation Error: ${error.response.data.error}`);
+    } else {
+      toast.error('Failed to add employee');
     }
-
-    // Check designation selection
-    if (!showCustomDesignation && !formData.designationId) {
-      toast.error('Please select a designation');
-      return;
-    }
-
-    if (showCustomDesignation && !formData.customDesignation.trim()) {
-      toast.error('Please enter a custom designation');
-      return;
-    }
-
-    try {
-      setSaving(true);
-      
-      // Prepare data for API
-      const employeeData = {
-        ...formData,
-        companyId: user.company.companyId
-      };
-
-      // Remove unnecessary fields based on designation type
-      if (showCustomDesignation) {
-        delete employeeData.designationId;
-      } else {
-        delete employeeData.customDesignation;
-      }
-
-      const response = await authAPI.addEmployee(employeeData);
-      if (response.data.success) {
-        toast.success('Employee added successfully!');
-        router.push('/employees');
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add employee');
-    } finally {
-      setSaving(false);
-    }
-  };
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleInputChange = (field, value) => {
+  setFormData(prev => ({
+    ...prev,
+    [field]: value
+  }));
+
+  // Handle department change
+  if (field === 'departmentId') {
     setFormData(prev => ({
       ...prev,
-      [field]: value
-    }));
-
-    // Handle department change
-    if (field === 'departmentId') {
-      setFormData(prev => ({
-        ...prev,
-        designationId: '',
-        customDesignation: ''
-      }));
-      fetchDesignationsByDepartment(value);
-    }
-
-    // Handle designation selection
-    if (field === 'designationId' && value === 'custom') {
-      setShowCustomDesignation(true);
-      setFormData(prev => ({
-        ...prev,
-        designationId: ''
-      }));
-    } else if (field === 'designationId' && value !== 'custom') {
-      setShowCustomDesignation(false);
-      setFormData(prev => ({
-        ...prev,
-        customDesignation: ''
-      }));
-    }
-  };
-
-  const resetForm = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      mobileNumber: '',
-      departmentId: '',
       designationId: '',
-      customDesignation: '',
-      locationId: '1',
-      password: '',
-      dateOfBirth: '',
-      dateOfJoining: today,
-      gender: 'Male',
-      address: '',
-      emergencyContact: '',
-      bloodGroup: ''
-    });
-    setDesignations([]);
+      customDesignation: ''
+    }));
+    fetchDesignationsByDepartment(value);
+  }
+
+  // Handle designation selection
+  if (field === 'designationId' && value === 'custom') {
+    setShowCustomDesignation(true);
+    setFormData(prev => ({
+      ...prev,
+      designationId: ''
+    }));
+  } else if (field === 'designationId' && value !== 'custom') {
     setShowCustomDesignation(false);
-  };
+    setFormData(prev => ({
+      ...prev,
+      customDesignation: ''
+    }));
+  }
+};
+
+
+const resetForm = () => {
+  const today = new Date().toISOString().split('T')[0];
+  // FIXED: Use LocationID directly instead of checking for value property
+  const defaultLocationId = locations.length > 0 ? locations[0].LocationID.toString() : '';
+  
+  setFormData({
+    firstName: '',
+    lastName: '',
+    email: '',
+    mobileNumber: '',
+    departmentId: '',
+    designationId: '',
+    customDesignation: '',
+    locationId: defaultLocationId,
+    password: '',
+    dateOfBirth: '',
+    dateOfJoining: today,
+    gender: 'Male',
+    address: '',
+    emergencyContact: '',
+    bloodGroup: ''
+  });
+  setDesignations([]);
+  setShowCustomDesignation(false);
+};
+
+
+
 
   return (
     <div className="min-h-screen">
@@ -464,68 +553,126 @@ export default function AddEmployeePage() {
                 </div>
 
                 {/* Designation Section */}
-                {formData.departmentId && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Designation <span className="text-red-500">*</span>
-                    </label>
-                    {loadingDesignations ? (
-                      <div className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl">
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-2"></div>
-                        <span className="text-gray-600">Loading designations...</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {designations.length > 0 && !showCustomDesignation && (
-                          <select
-                            required
-                            value={formData.designationId}
-                            onChange={(e) => handleInputChange('designationId', e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
-                          >
-                            <option value="">Select Designation</option>
-                            {designations.map(designation => (
-                              <option key={designation.id} value={designation.id}>
-                                {designation.label} {designation.BaseSalary && `(₹${designation.BaseSalary.toLocaleString()})`}
-                              </option>
-                            ))}
-                            <option value="custom">Others (Specify Custom)</option>
-                          </select>
-                        )}
+{formData.departmentId && (
+  <div>
+    <label className="block text-sm font-semibold text-gray-700 mb-2">
+      Designation <span className="text-red-500">*</span>
+    </label>
+    {loadingDesignations ? (
+      <div className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-xl">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-2"></div>
+        <span className="text-gray-600">Loading designations...</span>
+      </div>
+    ) : (
+      <div className="space-y-3">
+        {designations.length > 0 && !showCustomDesignation && (
+          <select
+            required
+            value={formData.designationId}
+            onChange={(e) => handleInputChange('designationId', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
+          >
+            <option value="">Select Designation</option>
+            {designations.map(designation => (
+              <option 
+                key={designation.id} 
+                value={designation.id}  
+              >
+                {designation.label}  
+                {designation.BaseSalary && ` (₹${designation.BaseSalary.toLocaleString()})`}
+              </option>
+            ))}
+            <option value="custom">Others (Specify Custom)</option>
+          </select>
+        )}
 
-                        {(showCustomDesignation || designations.length === 0) && (
-                          <div>
-                            <input
-                              type="text"
-                              required
-                              value={formData.customDesignation}
-                              onChange={(e) => handleInputChange('customDesignation', e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
-                              placeholder="Enter custom designation"
-                            />
-                            <p className="mt-1 text-xs text-blue-600">
-                              A new designation will be created and mapped to this department
-                            </p>
-                          </div>
-                        )}
+        {(showCustomDesignation || designations.length === 0) && (
+          <div>
+            <input
+              type="text"
+              required
+              value={formData.customDesignation}
+              onChange={(e) => handleInputChange('customDesignation', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
+              placeholder="Enter custom designation"
+            />
+            <p className="mt-1 text-xs text-blue-600">
+              A new designation will be created and mapped to this department
+            </p>
+          </div>
+        )}
 
-                        {designations.length > 0 && showCustomDesignation && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowCustomDesignation(false);
-                              setFormData(prev => ({ ...prev, customDesignation: '' }));
-                            }}
-                            className="text-sm text-blue-600 hover:text-blue-800 underline"
-                          >
-                            ← Back to available designations
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+        {designations.length > 0 && showCustomDesignation && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowCustomDesignation(false);
+              setFormData(prev => ({ ...prev, customDesignation: '' }));
+            }}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            ← Back to available designations
+          </button>
+        )}
+      </div>
+    )}
+  </div>
+)}
 
+               {/* Location Selection */}
+                <div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Work Location <span className="text-red-500">*</span>
+  </label>
+  <div className="relative">
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <FiMapPin className="h-5 w-5 text-gray-400" />
+    </div>
+    {loadingLocations ? (
+      <div className="flex items-center justify-center py-3 px-4 pl-10 border border-gray-300 rounded-xl">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-2"></div>
+        <span className="text-gray-600">Loading locations...</span>
+      </div>
+    ) : (
+      <select
+        required
+        value={formData.locationId}
+        onChange={(e) => handleInputChange('locationId', e.target.value)}
+        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm transition-all duration-200 text-black"
+      >
+        <option value="">Select Work Location</option>
+        {locations.map(location => (
+          <option 
+            key={location.LocationID} 
+            value={location.LocationID.toString()}
+          >
+            {location.LocationName}
+            {location.Address && ` - ${location.Address}`}
+            {location.City && `, ${location.City}`}
+          </option>
+        ))}
+      </select>
+    )}
+  </div>
+  
+  {/* Location Status Messages */}
+  {!loadingLocations && locations.length === 0 && (
+    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <p className="text-sm text-yellow-800">
+        <span className="font-semibold">No locations found.</span> 
+        Please contact your admin to add work locations for your company.
+      </p>
+    </div>
+  )}
+  
+  {!loadingLocations && locations.length > 0 && (
+    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+      <p className="text-xs text-green-700">
+        ✓ {locations.length} location(s) available for selection
+      </p>
+    </div>
+  )}
+</div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Date of Joining <span className="text-red-500">*</span>
@@ -545,7 +692,7 @@ export default function AddEmployeePage() {
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">Designation Information</h4>
+                  <h4 className="font-semibold text-blue-900 mb-2">Employee Setup Information</h4>
                   <div className="text-sm text-blue-700 space-y-1">
                     {designations.length > 0 && (
                       <p>• {designations.length} designation(s) available for this department</p>
@@ -553,9 +700,11 @@ export default function AddEmployeePage() {
                     {designations.length === 0 && formData.departmentId && (
                       <p>• No pre-defined designations found for this department</p>
                     )}
+                    {locations.length > 0 && (
+                      <p>• {locations.length} work location(s) available</p>
+                    )}
                     <p>• Custom designations will be automatically created</p>
                     <p>• Employee Code: Will be auto-generated based on department</p>
-                    <p>• Location: Will be assigned default work location</p>
                     <p>• Status: Will be set to Active by default</p>
                   </div>
                 </div>
@@ -581,7 +730,7 @@ export default function AddEmployeePage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving || loadingDesignations}
+                  disabled={saving || loadingDesignations || loadingLocations}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 py-3 px-6 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
                   {saving ? (
