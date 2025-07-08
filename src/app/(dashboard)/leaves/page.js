@@ -1,19 +1,20 @@
-// src/app/(dashboard)/leaves/page.js (Updated version with dropdown integration)
+// src/app/(dashboard)/leaves/page.js (Updated with Approved Leaves button)
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { leaveAPI, dropdownAPI } from '@/app/lib/api';
-import { FiPlus, FiCalendar, FiClock, FiCheck, FiX, FiUser } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiClock, FiCheck, FiX, FiUser, FiCheckCircle } from 'react-icons/fi';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 export default function LeavesPage() {
   const { user } = useAuth();
   const [leaves, setLeaves] = useState([]);
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState([]);
-  const [leaveTypes, setLeaveTypes] = useState([]); // For dropdown
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [activeTab, setActiveTab] = useState('my-leaves');
@@ -29,7 +30,7 @@ export default function LeavesPage() {
 
   useEffect(() => {
     fetchLeaveData();
-    fetchLeaveTypes(); // Load leave types for dropdown
+    fetchLeaveTypes();
   }, [user, activeTab]);
 
   // Fetch leave types from dropdown API
@@ -38,7 +39,6 @@ export default function LeavesPage() {
       const response = await dropdownAPI.getLeaveTypes();
       if (response.data.success) {
         setLeaveTypes(response.data.data);
-        // Set default leave type if available
         if (response.data.data.length > 0 && !formData.leaveTypeId) {
           setFormData(prev => ({ ...prev, leaveTypeId: response.data.data[0].id.toString() }));
         }
@@ -53,7 +53,7 @@ export default function LeavesPage() {
     try {
       setLoading(true);
 
-      // Fetch employee's own leaves (all users can see their own leaves)
+      // Fetch employee's own leaves
       const leavesResponse = await leaveAPI.getEmployeeLeaves(user.employeeId);
       if (leavesResponse.data.success) {
         setLeaves(leavesResponse.data.data);
@@ -135,7 +135,6 @@ export default function LeavesPage() {
   };
 
   const handleUpdateStatus = async (leaveId, status) => {
-    // Double check - only admin and manager can approve/reject
     if (!canApproveLeaves) {
       toast.error('You do not have permission to approve/reject leaves');
       return;
@@ -219,13 +218,25 @@ export default function LeavesPage() {
               }
             </p>
           </div>
-          <button
-            onClick={() => setShowApplyModal(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 flex items-center transition-colors duration-200 shadow-lg font-medium"
-          >
-            <FiPlus className="mr-2" />
-            Apply Leave
-          </button>
+          <div className="flex space-x-3">
+            {/* Approved Leaves Button - Only for admin and manager */}
+            {canApproveLeaves && (
+              <Link
+                href="/leaves/approved"
+                className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 flex items-center transition-colors duration-200 shadow-lg font-medium"
+              >
+                <FiCheckCircle className="mr-2" />
+                Approved Leaves
+              </Link>
+            )}
+            <button
+              onClick={() => setShowApplyModal(true)}
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 flex items-center transition-colors duration-200 shadow-lg font-medium"
+            >
+              <FiPlus className="mr-2" />
+              Apply Leave
+            </button>
+          </div>
         </div>
 
         {/* Leave Balance Cards */}
@@ -379,7 +390,6 @@ export default function LeavesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {canApproveLeaves && activeTab === 'pending-approvals' ? (
-                        // Admin/Manager can approve/reject pending leaves
                         <div className="flex space-x-3">
                           <button
                             onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Approved')}
@@ -397,7 +407,6 @@ export default function LeavesPage() {
                           </button>
                         </div>
                       ) : (
-                        // All users can cancel their own pending leaves
                         leave.ApplicationStatus === 'Pending' && (
                           <button
                             onClick={() => handleCancelLeave(leave.LeaveApplicationID)}
@@ -407,7 +416,6 @@ export default function LeavesPage() {
                           </button>
                         )
                       )}
-                      {/* Show no actions for non-pending leaves in "My Leaves" view */}
                       {leave.ApplicationStatus !== 'Pending' && 
                        (!(canApproveLeaves && activeTab === 'pending-approvals')) && (
                         <span className="text-gray-400 text-sm">No actions</span>
@@ -415,7 +423,6 @@ export default function LeavesPage() {
                     </td>
                   </tr>
                 ))}
-                {/* Show message when no leaves found */}
                 {((canApproveLeaves && activeTab === 'pending-approvals' && pendingLeaves.length === 0) ||
                   ((!canApproveLeaves || activeTab === 'my-leaves') && leaves.length === 0)) && (
                   <tr>
