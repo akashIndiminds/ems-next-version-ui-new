@@ -1,10 +1,10 @@
-// src/app/(dashboard)/leaves/page.js (Updated with Approved Leaves button)
+// src/app/(dashboard)/leaves/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { leaveAPI, dropdownAPI } from '@/app/lib/api';
-import { FiPlus, FiCalendar, FiClock, FiCheck, FiX, FiUser, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiClock, FiUser, FiSettings, FiRefreshCw } from 'react-icons/fi';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -12,12 +12,11 @@ import Link from 'next/link';
 export default function LeavesPage() {
   const { user } = useAuth();
   const [leaves, setLeaves] = useState([]);
-  const [pendingLeaves, setPendingLeaves] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('my-leaves');
   const [formData, setFormData] = useState({
     leaveTypeId: '',
     fromDate: '',
@@ -25,13 +24,15 @@ export default function LeavesPage() {
     reason: ''
   });
 
-  // Check if user can approve leaves (only admin and manager)
-  const canApproveLeaves = user?.role === 'admin' || user?.role === 'manager';
+  // Check if user can manage leaves (only admin and manager)
+  const canManageLeaves = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
-    fetchLeaveData();
-    fetchLeaveTypes();
-  }, [user, activeTab]);
+    if (user?.employeeId) {
+      fetchLeaveData();
+      fetchLeaveTypes();
+    }
+  }, [user]);
 
   // Fetch leave types from dropdown API
   const fetchLeaveTypes = async () => {
@@ -49,35 +50,58 @@ export default function LeavesPage() {
     }
   };
 
-  const fetchLeaveData = async () => {
+  const fetchLeaveData = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
-      // Fetch employee's own leaves
-      const leavesResponse = await leaveAPI.getEmployeeLeaves(user.employeeId);
+      if (!user?.employeeId) {
+        console.error('No employeeId found');
+        return;
+      }
+
+      // Fetch employee's own leaves with pagination
+      const leavesResponse = await leaveAPI.getEmployeeLeaves(user.employeeId, {
+        page: 1,
+        limit: 50, // Get more records for personal view
+        sortBy: 'AppliedDate',
+        sortOrder: 'DESC'
+      });
+      
       if (leavesResponse.data.success) {
-        setLeaves(leavesResponse.data.data);
+        setLeaves(leavesResponse.data.data || []);
+      } else {
+        console.error('Failed to fetch leaves:', leavesResponse.data.message);
+        setLeaves([]);
       }
 
       // Fetch leave balance
       const balanceResponse = await leaveAPI.getBalance(user.employeeId);
       if (balanceResponse.data.success) {
-        setLeaveBalance(balanceResponse.data.data);
-      }
-
-      // Fetch pending leaves for approval (only for managers and admins)
-      if (canApproveLeaves) {
-        const pendingResponse = await leaveAPI.getPending();
-        if (pendingResponse.data.success) {
-          setPendingLeaves(pendingResponse.data.data);
-        }
+        setLeaveBalance(balanceResponse.data.data || []);
+      } else {
+        console.error('Failed to fetch balance:', balanceResponse.data.message);
+        setLeaveBalance([]);
       }
     } catch (error) {
       console.error('Error fetching leave data:', error);
       toast.error('Failed to load leave data');
+      setLeaves([]);
+      setLeaveBalance([]);
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleRefresh = () => {
+    fetchLeaveData(true);
   };
 
   const handleApplyLeave = async (e) => {
@@ -118,51 +142,45 @@ export default function LeavesPage() {
     }
 
     try {
+      // Use the enhanced API call
       const response = await leaveAPI.apply({
         employeeId: user.employeeId,
         leaveTypeId: parseInt(formData.leaveTypeId),
-        ...formData
+        fromDate: formData.fromDate,
+        toDate: formData.toDate,
+        reason: formData.reason.trim()
       });
+      
       if (response.data.success) {
         toast.success('Leave application submitted successfully!');
         setShowApplyModal(false);
         resetForm();
-        fetchLeaveData();
+        fetchLeaveData(true); // Refresh data
+      } else {
+        toast.error(response.data.message || 'Failed to apply for leave');
       }
     } catch (error) {
+      console.error('Apply leave error:', error);
       toast.error(error.response?.data?.message || 'Failed to apply for leave');
     }
   };
 
-  const handleUpdateStatus = async (leaveId, status) => {
-    if (!canApproveLeaves) {
-      toast.error('You do not have permission to approve/reject leaves');
+  const handleCancelLeave = async (leaveId) => {
+    if (!confirm('Are you sure you want to cancel this leave?')) {
       return;
     }
 
     try {
-      const response = await leaveAPI.updateStatus(leaveId, {
-        status,
-        remarks: status === 'Approved' ? 'Approved by manager' : 'Rejected by manager'
-      });
+      const response = await leaveAPI.cancel(leaveId);
       if (response.data.success) {
-        toast.success(`Leave ${status.toLowerCase()} successfully`);
-        fetchLeaveData();
+        toast.success('Leave cancelled successfully');
+        fetchLeaveData(true); // Refresh data
+      } else {
+        toast.error(response.data.message || 'Failed to cancel leave');
       }
     } catch (error) {
-      toast.error(`Failed to ${status.toLowerCase()} leave`);
-    }
-  };
-
-  const handleCancelLeave = async (leaveId) => {
-    if (confirm('Are you sure you want to cancel this leave?')) {
-      try {
-        await leaveAPI.cancel(leaveId);
-        toast.success('Leave cancelled successfully');
-        fetchLeaveData();
-      } catch (error) {
-        toast.error('Failed to cancel leave');
-      }
+      console.error('Cancel leave error:', error);
+      toast.error(error.response?.data?.message || 'Failed to cancel leave');
     }
   };
 
@@ -181,6 +199,7 @@ export default function LeavesPage() {
       case 'Approved': return 'text-emerald-700 bg-emerald-100 border-emerald-200';
       case 'Rejected': return 'text-red-700 bg-red-100 border-red-200';
       case 'Cancelled': return 'text-gray-700 bg-gray-100 border-gray-200';
+      case 'Revoked': return 'text-purple-700 bg-purple-100 border-purple-200';
       default: return 'text-gray-700 bg-gray-100 border-gray-200';
     }
   };
@@ -192,11 +211,29 @@ export default function LeavesPage() {
     return 'from-blue-500 via-purple-500 to-pink-500';
   };
 
+  // Show loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="relative">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no user state
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-gray-500 mb-2">Please log in to view leave information</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            Reload page
+          </button>
         </div>
       </div>
     );
@@ -212,23 +249,31 @@ export default function LeavesPage() {
               Leave Management
             </h1>
             <p className="mt-2 text-gray-600">
-              {canApproveLeaves 
-                ? 'Apply for leaves and manage leave requests'
-                : 'Apply for leaves and track your leave history'
-              }
+              Apply for leaves and track your leave history
             </p>
           </div>
           <div className="flex space-x-3">
-            {/* Approved Leaves Button - Only for admin and manager */}
-            {canApproveLeaves && (
+            {/* Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 flex items-center transition-colors duration-200 font-medium disabled:opacity-50"
+            >
+              <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+
+            {/* Management Button - Only for admin and manager */}
+            {canManageLeaves && (
               <Link
                 href="/leaves/approved"
                 className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 flex items-center transition-colors duration-200 shadow-lg font-medium"
               >
-                <FiCheckCircle className="mr-2" />
-                Approved Leaves
+                <FiSettings className="mr-2" />
+                Manage Leaves
               </Link>
             )}
+            
             <button
               onClick={() => setShowApplyModal(true)}
               className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 flex items-center transition-colors duration-200 shadow-lg font-medium"
@@ -258,14 +303,16 @@ export default function LeavesPage() {
                     <span className="text-3xl font-bold text-gray-900">
                       {balance.BalanceDays || 0}
                     </span>
-                    <span className="ml-2 text-sm font-medium text-gray-500">/ {balance.AllocatedDays || balance.MaxDaysPerYear}</span>
+                    <span className="ml-2 text-sm font-medium text-gray-500">
+                      / {balance.AllocatedDays || balance.MaxDaysPerYear || 0}
+                    </span>
                   </div>
                   <div className="mt-3 bg-gray-50 rounded-xl p-3 space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-black font-medium">Used:</span>
                       <span className="font-semibold text-black">{balance.UsedDays || 0} days</span>
                     </div>
-                    {balance.CarryForwardDays > 0 && (
+                    {(balance.CarryForwardDays || 0) > 0 && (
                       <div className="flex justify-between text-xs">
                         <span className="text-gray-600 font-medium">Carry Forward:</span>
                         <span className="font-semibold text-purple-600">{balance.CarryForwardDays} days</span>
@@ -279,7 +326,9 @@ export default function LeavesPage() {
                         className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
                         style={{
                           width: `${Math.min(
-                            balance.AllocatedDays > 0 ? ((balance.UsedDays || 0) / balance.AllocatedDays) * 100 : 0,
+                            (balance.AllocatedDays || balance.MaxDaysPerYear || 0) > 0 
+                              ? ((balance.UsedDays || 0) / (balance.AllocatedDays || balance.MaxDaysPerYear || 1)) * 100 
+                              : 0,
                             100
                           )}%`,
                         }}
@@ -292,56 +341,18 @@ export default function LeavesPage() {
           )}
         </div>
 
-        {/* Tabs - Only show for admin/manager */}
-        {canApproveLeaves && (
-          <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6">
-                <button
-                  onClick={() => setActiveTab('my-leaves')}
-                  className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
-                    activeTab === 'my-leaves'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  My Leaves
-                </button>
-                <button
-                  onClick={() => setActiveTab('pending-approvals')}
-                  className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
-                    activeTab === 'pending-approvals'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Pending Approvals ({pendingLeaves.length})
-                </button>
-              </nav>
-            </div>
-          </div>
-        )}
-
-        {/* Leave Table */}
+        {/* My Leave History */}
         <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <FiUser className="mr-3 text-blue-600" />
-              {canApproveLeaves && activeTab === 'pending-approvals' 
-                ? 'Pending Approvals' 
-                : 'My Leave History'
-              }
+              My Leave History ({leaves.length})
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {canApproveLeaves && activeTab === 'pending-approvals' && (
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Employee
-                    </th>
-                  )}
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Leave Type
                   </th>
@@ -358,19 +369,16 @@ export default function LeavesPage() {
                     Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Applied Date
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {(canApproveLeaves && activeTab === 'pending-approvals' ? pendingLeaves : leaves).map((leave, index) => (
+                {leaves.map((leave, index) => (
                   <tr key={leave.LeaveApplicationID} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    {canApproveLeaves && activeTab === 'pending-approvals' && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{leave.EmployeeName}</div>
-                        <div className="text-sm text-gray-600">{leave.EmployeeCode}</div>
-                      </td>
-                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {leave.LeaveTypeName}
                     </td>
@@ -388,49 +396,27 @@ export default function LeavesPage() {
                         {leave.ApplicationStatus}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {leave.AppliedDate ? format(new Date(leave.AppliedDate), 'MMM d, yyyy') : '-'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {canApproveLeaves && activeTab === 'pending-approvals' ? (
-                        <div className="flex space-x-3">
-                          <button
-                            onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Approved')}
-                            className="text-emerald-600 hover:text-emerald-800 p-2 rounded-lg hover:bg-emerald-50 transition-colors duration-200"
-                            title="Approve"
-                          >
-                            <FiCheck className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Rejected')}
-                            className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200"
-                            title="Reject"
-                          >
-                            <FiX className="h-5 w-5" />
-                          </button>
-                        </div>
+                      {leave.ApplicationStatus === 'Pending' ? (
+                        <button
+                          onClick={() => handleCancelLeave(leave.LeaveApplicationID)}
+                          className="text-red-600 hover:text-red-800 bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100 transition-colors duration-200 font-medium"
+                        >
+                          Cancel
+                        </button>
                       ) : (
-                        leave.ApplicationStatus === 'Pending' && (
-                          <button
-                            onClick={() => handleCancelLeave(leave.LeaveApplicationID)}
-                            className="text-red-600 hover:text-red-800 bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100 transition-colors duration-200 font-medium"
-                          >
-                            Cancel
-                          </button>
-                        )
-                      )}
-                      {leave.ApplicationStatus !== 'Pending' && 
-                       (!(canApproveLeaves && activeTab === 'pending-approvals')) && (
                         <span className="text-gray-400 text-sm">No actions</span>
                       )}
                     </td>
                   </tr>
                 ))}
-                {((canApproveLeaves && activeTab === 'pending-approvals' && pendingLeaves.length === 0) ||
-                  ((!canApproveLeaves || activeTab === 'my-leaves') && leaves.length === 0)) && (
+                {leaves.length === 0 && (
                   <tr>
-                    <td colSpan={canApproveLeaves && activeTab === 'pending-approvals' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
-                      {canApproveLeaves && activeTab === 'pending-approvals' 
-                        ? 'No pending leave applications'
-                        : 'No leave applications found'
-                      }
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      No leave applications found. Click "Apply Leave" to submit your first application.
                     </td>
                   </tr>
                 )}
@@ -504,6 +490,17 @@ export default function LeavesPage() {
                         />
                       </div>
                     </div>
+
+                    {/* Show calculated days */}
+                    {formData.fromDate && formData.toDate && (
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-sm text-blue-800">
+                          <strong>Total Days:</strong> {
+                            Math.ceil((new Date(formData.toDate) - new Date(formData.fromDate)) / (1000 * 60 * 60 * 24)) + 1
+                          } days
+                        </div>
+                      </div>
+                    )}
                     
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -516,7 +513,11 @@ export default function LeavesPage() {
                         onChange={(e) => setFormData({...formData, reason: e.target.value})}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 bg-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Please provide a reason for your leave..."
+                        maxLength={500}
                       />
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formData.reason.length}/500 characters
+                      </div>
                     </div>
                   </div>
                   

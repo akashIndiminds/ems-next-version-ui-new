@@ -1,21 +1,21 @@
-// src/app/(dashboard)/leaves/approved/page.js
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { leaveAPI, dropdownAPI } from '@/app/lib/api';
 import { 
   FiArrowLeft, FiSearch, FiFilter, FiCalendar, FiUser, 
   FiEdit3, FiX, FiClock, FiCheckCircle, FiAlertTriangle,
-  FiEye, FiRefreshCw, FiDownload
+  FiEye, FiRefreshCw, FiCheck, FiXCircle, FiDownload
 } from 'react-icons/fi';
-import { format, parseISO, isAfter, isBefore, isWithinInterval } from 'date-fns';
+import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-export default function ApprovedLeavesPage() {
+export default function LeaveManagementPage() {
   const { user } = useAuth();
   const [approvedLeaves, setApprovedLeaves] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +26,7 @@ export default function ApprovedLeavesPage() {
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [showModifyModal, setShowModifyModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('pending');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
 
   // Form states
@@ -38,13 +39,16 @@ export default function ApprovedLeavesPage() {
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
+  const canManageLeaves = user?.role === 'admin' || user?.role === 'manager';
 
   useEffect(() => {
-    fetchApprovedLeaves();
-    fetchDepartments();
-  }, [pagination.page, searchTerm, selectedDepartment, dateRange]);
+    if (canManageLeaves) {
+      fetchLeaveData();
+      fetchDepartments();
+    }
+  }, [pagination.page, searchTerm, selectedDepartment, dateRange, activeTab, canManageLeaves]);
 
-  const fetchApprovedLeaves = async () => {
+  const fetchLeaveData = async () => {
     try {
       setLoading(true);
       const params = {
@@ -56,17 +60,41 @@ export default function ApprovedLeavesPage() {
         toDate: dateRange.to
       };
 
-      const response = await leaveAPI.getApprovedLeaves(params);
-      if (response.data.success) {
-        setApprovedLeaves(response.data.data);
-        setPagination(prev => ({
-          ...prev,
-          total: response.data.total
-        }));
+      if (activeTab === 'pending') {
+        // Fetch pending leaves using the enhanced API
+        const pendingResponse = await leaveAPI.getPending(params);
+        if (pendingResponse.data.success) {
+          setPendingLeaves(pendingResponse.data.data || []);
+          setPagination(prev => ({
+            ...prev,
+            total: pendingResponse.data.total || 0
+          }));
+        } else {
+          console.error('Failed to fetch pending leaves:', pendingResponse.data.message);
+          setPendingLeaves([]);
+        }
+      } else {
+        // Fetch approved leaves using the new API
+        const approvedResponse = await leaveAPI.getApprovedLeaves(params);
+        if (approvedResponse.data.success) {
+          setApprovedLeaves(approvedResponse.data.data || []);
+          setPagination(prev => ({
+            ...prev,
+            total: approvedResponse.data.total || 0
+          }));
+        } else {
+          console.error('Failed to fetch approved leaves:', approvedResponse.data.message);
+          setApprovedLeaves([]);
+        }
       }
     } catch (error) {
-      console.error('Error fetching approved leaves:', error);
-      toast.error('Failed to load approved leaves');
+      console.error('Error fetching leave data:', error);
+      toast.error('Failed to load leave data');
+      if (activeTab === 'pending') {
+        setPendingLeaves([]);
+      } else {
+        setApprovedLeaves([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,10 +104,33 @@ export default function ApprovedLeavesPage() {
     try {
       const response = await dropdownAPI.getDepartments();
       if (response.data.success) {
-        setDepartments(response.data.data);
+        setDepartments(response.data.data || []);
       }
     } catch (error) {
       console.error('Error fetching departments:', error);
+    }
+  };
+
+  const handleUpdateStatus = async (leaveId, status) => {
+    if (!canManageLeaves) {
+      toast.error('You do not have permission to approve/reject leaves');
+      return;
+    }
+
+    try {
+      const response = await leaveAPI.updateStatus(leaveId, {
+        status,
+        remarks: status === 'Approved' ? 'Approved by manager' : 'Rejected by manager'
+      });
+      if (response.data.success) {
+        toast.success(`Leave ${status.toLowerCase()} successfully`);
+        fetchLeaveData(); // Refresh data
+      } else {
+        toast.error(response.data.message || `Failed to ${status.toLowerCase()} leave`);
+      }
+    } catch (error) {
+      console.error(`Error ${status.toLowerCase()} leave:`, error);
+      toast.error(error.response?.data?.message || `Failed to ${status.toLowerCase()} leave`);
     }
   };
 
@@ -91,7 +142,7 @@ export default function ApprovedLeavesPage() {
 
     try {
       const response = await leaveAPI.revokeApprovedLeave(selectedLeave.LeaveApplicationID, {
-        reason: revokeReason
+        reason: revokeReason.trim()
       });
 
       if (response.data.success) {
@@ -99,9 +150,12 @@ export default function ApprovedLeavesPage() {
         setShowRevokeModal(false);
         setSelectedLeave(null);
         setRevokeReason('');
-        fetchApprovedLeaves();
+        fetchLeaveData(); // Refresh data
+      } else {
+        toast.error(response.data.message || 'Failed to revoke leave');
       }
     } catch (error) {
+      console.error('Error revoking leave:', error);
       toast.error(error.response?.data?.message || 'Failed to revoke leave');
     }
   };
@@ -115,6 +169,12 @@ export default function ApprovedLeavesPage() {
     // Validate dates
     const fromDate = new Date(modifyData.fromDate);
     const toDate = new Date(modifyData.toDate);
+    const today = new Date();
+
+    if (fromDate < today) {
+      toast.error('From date cannot be in the past');
+      return;
+    }
 
     if (toDate < fromDate) {
       toast.error('To date cannot be before from date');
@@ -122,21 +182,66 @@ export default function ApprovedLeavesPage() {
     }
 
     try {
-      const response = await leaveAPI.modifyApprovedLeave(selectedLeave.LeaveApplicationID, modifyData);
+      const response = await leaveAPI.modifyApprovedLeave(selectedLeave.LeaveApplicationID, {
+        fromDate: modifyData.fromDate,
+        toDate: modifyData.toDate,
+        reason: modifyData.reason.trim()
+      });
 
       if (response.data.success) {
         toast.success('Leave dates modified successfully');
         setShowModifyModal(false);
         setSelectedLeave(null);
         setModifyData({ fromDate: '', toDate: '', reason: '' });
-        fetchApprovedLeaves();
+        fetchLeaveData(); // Refresh data
+      } else {
+        toast.error(response.data.message || 'Failed to modify leave');
       }
     } catch (error) {
+      console.error('Error modifying leave:', error);
       toast.error(error.response?.data?.message || 'Failed to modify leave');
     }
   };
 
+  const handleExportData = async () => {
+    try {
+      const params = {
+        employeeFilter: searchTerm,
+        departmentFilter: selectedDepartment,
+        fromDate: dateRange.from,
+        toDate: dateRange.to,
+        status: activeTab === 'pending' ? 'Pending' : 'Approved'
+      };
+
+      const response = await leaveAPI.exportLeaves(params, 'excel');
+      
+      // Handle blob download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${activeTab}_leaves_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Leave data exported successfully');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast.error('Failed to export leave data');
+    }
+  };
+
   const getLeaveStatusBadge = (leave) => {
+    if (activeTab === 'pending') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+          <FiClock className="mr-1 h-3 w-3" />
+          Pending
+        </span>
+      );
+    }
+
     const today = new Date();
     const fromDate = parseISO(leave.FromDate);
     const toDate = parseISO(leave.ToDate);
@@ -178,6 +283,21 @@ export default function ApprovedLeavesPage() {
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
+  // Redirect if user doesn't have permission
+  if (!canManageLeaves) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-gray-500 mb-2">Access Denied</div>
+          <p className="text-sm text-gray-600">You don't have permission to manage leaves.</p>
+          <Link href="/leaves" className="text-blue-600 hover:text-blue-800 underline mt-2 inline-block">
+            Go back to Leave Applications
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (loading && pagination.page === 1) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -185,6 +305,8 @@ export default function ApprovedLeavesPage() {
       </div>
     );
   }
+
+  const currentData = activeTab === 'pending' ? pendingLeaves : approvedLeaves;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -202,20 +324,65 @@ export default function ApprovedLeavesPage() {
             <div className="h-6 w-px bg-gray-300"></div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Approved Leaves Management
+                Leave Management
               </h1>
               <p className="mt-2 text-gray-600">
-                View, modify, and manage all approved leave applications
+                Manage pending approvals and approved leave requests
               </p>
             </div>
           </div>
-          <button
-            onClick={fetchApprovedLeaves}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <FiRefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleExportData}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <FiDownload className="mr-2 h-4 w-4" />
+              Export
+            </button>
+            <button
+              onClick={fetchLeaveData}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <FiRefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6">
+              <button
+                onClick={() => {
+                  setActiveTab('pending');
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }}
+                className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
+                  activeTab === 'pending'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <FiClock className="inline mr-2" />
+                Pending Approvals ({pendingLeaves.length})
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('approved');
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }}
+                className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
+                  activeTab === 'approved'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <FiCheckCircle className="inline mr-2" />
+                Approved Leaves ({approvedLeaves.length})
+              </button>
+            </nav>
+          </div>
         </div>
 
         {/* Filters */}
@@ -307,10 +474,23 @@ export default function ApprovedLeavesPage() {
 
         {/* Leaves Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
+          <div className={`p-6 border-b border-gray-200 ${
+            activeTab === 'pending' 
+              ? 'bg-gradient-to-r from-amber-50 to-orange-50' 
+              : 'bg-gradient-to-r from-green-50 to-blue-50'
+          }`}>
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <FiCheckCircle className="mr-3 text-green-600" />
-              Approved Leaves ({pagination.total})
+              {activeTab === 'pending' ? (
+                <>
+                  <FiClock className="mr-3 text-amber-600" />
+                  Pending Approvals ({pagination.total})
+                </>
+              ) : (
+                <>
+                  <FiCheckCircle className="mr-3 text-green-600" />
+                  Approved Leaves ({pagination.total})
+                </>
+              )}
             </h2>
           </div>
           
@@ -333,16 +513,18 @@ export default function ApprovedLeavesPage() {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Approved By
-                  </th>
+                  {activeTab === 'approved' && (
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Approved By
+                    </th>
+                  )}
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {approvedLeaves.map((leave, index) => (
+                {currentData.map((leave, index) => (
                   <tr key={leave.LeaveApplicationID} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -378,14 +560,16 @@ export default function ApprovedLeavesPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getLeaveStatusBadge(leave)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <div>
-                        <div className="font-medium">{leave.ApproverName}</div>
-                        <div className="text-xs text-gray-500">
-                          {format(parseISO(leave.ApprovedDate), 'MMM d, yyyy')}
+                    {activeTab === 'approved' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <div>
+                          <div className="font-medium">{leave.ApproverName || 'System'}</div>
+                          <div className="text-xs text-gray-500">
+                            {leave.ApprovedDate ? format(parseISO(leave.ApprovedDate), 'MMM d, yyyy') : '-'}
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button
@@ -398,7 +582,27 @@ export default function ApprovedLeavesPage() {
                         >
                           <FiEye className="h-4 w-4" />
                         </button>
-                        {canModifyLeave(leave) && (
+                        
+                        {activeTab === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Approved')}
+                              className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50 transition-colors"
+                              title="Approve"
+                            >
+                              <FiCheck className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Rejected')}
+                              className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                              title="Reject"
+                            >
+                              <FiX className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                        
+                        {activeTab === 'approved' && canModifyLeave(leave) && (
                           <button
                             onClick={() => {
                               setSelectedLeave(leave);
@@ -415,7 +619,8 @@ export default function ApprovedLeavesPage() {
                             <FiEdit3 className="h-4 w-4" />
                           </button>
                         )}
-                        {isAdmin && (
+                        
+                        {activeTab === 'approved' && isAdmin && (
                           <button
                             onClick={() => {
                               setSelectedLeave(leave);
@@ -424,17 +629,20 @@ export default function ApprovedLeavesPage() {
                             className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
                             title="Revoke Leave"
                           >
-                            <FiX className="h-4 w-4" />
+                            <FiXCircle className="h-4 w-4" />
                           </button>
                         )}
                       </div>
                     </td>
                   </tr>
                 ))}
-                {approvedLeaves.length === 0 && (
+                {currentData.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                      No approved leaves found
+                    <td colSpan={activeTab === 'approved' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
+                      {activeTab === 'pending' 
+                        ? 'No pending leave applications'
+                        : 'No approved leaves found'
+                      }
                     </td>
                   </tr>
                 )}
@@ -473,74 +681,52 @@ export default function ApprovedLeavesPage() {
           )}
         </div>
 
-        {/* View Details Modal */}
+        {/* View Modal */}
         {showViewModal && selectedLeave && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4">
               <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowViewModal(false)}></div>
               
-              <div className="relative bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+              <div className="relative bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-gray-900">Leave Details</h3>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Employee</label>
-                      <p className="text-sm text-gray-900">{selectedLeave.EmployeeName}</p>
-                      <p className="text-xs text-gray-500">{selectedLeave.EmployeeCode}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Department</label>
-                      <p className="text-sm text-gray-900">{selectedLeave.DepartmentName}</p>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3">Employee Information</h4>
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Name:</span> {selectedLeave.EmployeeName}</p>
+                      <p><span className="font-medium">Code:</span> {selectedLeave.EmployeeCode}</p>
+                      <p><span className="font-medium">Department:</span> {selectedLeave.DepartmentName}</p>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Leave Type</label>
-                    <p className="text-sm text-gray-900">{selectedLeave.LeaveTypeName}</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">From Date</label>
-                      <p className="text-sm text-gray-900">{format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">To Date</label>
-                      <p className="text-sm text-gray-900">{format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}</p>
+                    <h4 className="font-semibold text-gray-900 mb-3">Leave Information</h4>
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Type:</span> {selectedLeave.LeaveTypeName}</p>
+                      <p><span className="font-medium">From:</span> {format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')}</p>
+                      <p><span className="font-medium">To:</span> {format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}</p>
+                      <p><span className="font-medium">Total Days:</span> {selectedLeave.TotalDays}</p>
+                      {selectedLeave.ApproverName && (
+                        <p><span className="font-medium">Approved By:</span> {selectedLeave.ApproverName}</p>
+                      )}
                     </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Total Days</label>
-                    <p className="text-sm text-gray-900">{selectedLeave.TotalDays} {selectedLeave.TotalDays === 1 ? 'day' : 'days'}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Reason</label>
-                    <p className="text-sm text-gray-900">{selectedLeave.Reason}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Approved By</label>
-                    <p className="text-sm text-gray-900">{selectedLeave.ApproverName}</p>
-                    <p className="text-xs text-gray-500">{format(parseISO(selectedLeave.ApprovedDate), 'MMM d, yyyy')}</p>
-                  </div>
-                  
-                  {selectedLeave.ApprovalRemarks && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Approval Remarks</label>
-                      <p className="text-sm text-gray-900">{selectedLeave.ApprovalRemarks}</p>
-                    </div>
-                  )}
                 </div>
                 
-                <div className="mt-6 flex justify-end">
+                {selectedLeave.Reason && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-gray-900 mb-2">Reason</h4>
+                    <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedLeave.Reason}</p>
+                  </div>
+                )}
+                
+                <div className="flex justify-end mt-6">
                   <button
                     onClick={() => setShowViewModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     Close
                   </button>
@@ -584,7 +770,11 @@ export default function ApprovedLeavesPage() {
                     rows="3"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     placeholder="Please provide a reason for revoking this leave..."
+                    maxLength={500}
                   />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {revokeReason.length}/500 characters
+                  </div>
                 </div>
                 
                 <div className="flex justify-end space-x-3">
@@ -599,7 +789,8 @@ export default function ApprovedLeavesPage() {
                   </button>
                   <button
                     onClick={handleRevokeLeave}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                    disabled={!revokeReason.trim()}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Revoke Leave
                   </button>
@@ -661,7 +852,11 @@ export default function ApprovedLeavesPage() {
                       rows="3"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Please provide a reason for modifying the dates..."
+                      maxLength={500}
                     />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {modifyData.reason.length}/500 characters
+                    </div>
                   </div>
                   
                   {/* Calculate new total days */}
@@ -690,7 +885,8 @@ export default function ApprovedLeavesPage() {
                   </button>
                   <button
                     onClick={handleModifyLeave}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                    disabled={!modifyData.fromDate || !modifyData.toDate || !modifyData.reason.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Modify Leave
                   </button>

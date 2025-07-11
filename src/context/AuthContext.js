@@ -24,7 +24,114 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuth();
+    setupTokenExpiryChecker(); // 🔥 NEW: Setup automatic token checking
   }, []);
+
+  // 🚀 NEW: Token validation function
+  const isTokenValid = () => {
+    const token = Cookies.get('token');
+    if (!token) return false;
+    
+    try {
+      // Decode JWT token to check expiry
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      
+      // Check if token is expired (with 1 minute buffer)
+      return tokenData.exp > (currentTime + 60);
+    } catch (error) {
+      console.error('❌ Token validation error:', error);
+      return false;
+    }
+  };
+
+  // 🚀 NEW: Token expiry checker with automatic redirect
+  const checkTokenExpiry = async () => {
+    const token = Cookies.get('token');
+    
+    if (!token) {
+      if (user) {
+        console.log('🔥 No token found, logging out...');
+        handleTokenExpiry();
+      }
+      return false;
+    }
+
+    if (!isTokenValid()) {
+      console.log('🔥 Token expired, redirecting to login...');
+      handleTokenExpiry();
+      return false;
+    }
+
+    return true;
+  };
+
+  // 🚀 NEW: Handle token expiry with proper cleanup and redirect
+  const handleTokenExpiry = () => {
+    console.log('🔥 Handling token expiry...');
+    
+    // Clear all auth data
+    Cookies.remove('token');
+    Cookies.remove('user');
+    setUser(null);
+    
+    // Show expiry message
+    toast.error('Session expired. Please login again.', {
+      duration: 4000,
+      position: 'top-center',
+    });
+    
+    // Redirect to login page
+    router.push('/login');
+  };
+
+  // 🚀 NEW: Setup periodic token checking
+  const setupTokenExpiryChecker = () => {
+    // Check immediately
+    checkTokenExpiry();
+    
+    // Then check every 30 seconds
+    const interval = setInterval(() => {
+      if (user && !checkTokenExpiry()) {
+        clearInterval(interval);
+      }
+    }, 30000); // Check every 30 seconds
+
+    // Cleanup on unmount
+    return () => clearInterval(interval);
+  };
+
+  // 🚀 NEW: Enhanced checkAuth with token validation
+  const checkAuth = async () => {
+    const token = Cookies.get('token');
+    const userData = Cookies.get('user');
+    
+    if (token && userData) {
+      // First check if token is valid
+      if (!isTokenValid()) {
+        console.log('🔥 Token expired during auth check');
+        handleTokenExpiry();
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const parsedUser = JSON.parse(userData);
+        const cleanedUser = cleanUserData(parsedUser);
+        
+        console.log('🔍 Auth check - cleaned user data:', cleanedUser);
+        console.log('🔍 User role:', cleanedUser.role);
+        setUser(cleanedUser);
+      } catch (error) {
+        console.error('❌ Error parsing user data:', error);
+        handleTokenExpiry();
+      }
+    } else {
+      console.log('🔍 No token or user data found');
+    }
+    
+    setLoading(false);
+  };
 
   // Helper function to clean array values and ensure proper data structure
   const cleanUserData = (userData) => {
@@ -75,26 +182,6 @@ export const AuthProvider = ({ children }) => {
     return cleaned;
   };
 
-  const checkAuth = () => {
-    const token = Cookies.get('token');
-    const userData = Cookies.get('user');
-    
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        const cleanedUser = cleanUserData(parsedUser);
-        
-        console.log('🔍 Auth check - cleaned user data:', cleanedUser);
-        console.log('🔍 User role:', cleanedUser.role); // Debug role
-        setUser(cleanedUser);
-      } catch (error) {
-        console.error('❌ Error parsing user data:', error);
-        logout();
-      }
-    }
-    setLoading(false);
-  };
-
   const login = async (credentials) => {
     try {
       const response = await authAPI.login(credentials);
@@ -127,7 +214,7 @@ export const AuthProvider = ({ children }) => {
         const cleanEmployee = cleanUserData(mappedEmployee);
         
         console.log('✅ Login successful with clean data:', cleanEmployee);
-        console.log('✅ Final user role:', cleanEmployee.role); // Debug final role
+        console.log('✅ Final user role:', cleanEmployee.role);
         
         // Store token and user data
         Cookies.set('token', token, { expires: 7 }); // 7 days
@@ -202,12 +289,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  // 🚀 UPDATED: Enhanced logout function
+  const logout = (isExpired = false) => {
     Cookies.remove('token');
     Cookies.remove('user');
     setUser(null);
+    
+    if (!isExpired) {
+      toast.success('Logged out successfully');
+    }
+    
     router.push('/login');
-    toast.success('Logged out successfully');
   };
 
   const updateUser = (userData) => {
@@ -259,10 +351,11 @@ export const AuthProvider = ({ children }) => {
     console.log('Full User Object:', user);
     console.log('Employee ID:', user?.employeeId);
     console.log('Company ID:', user?.company?.companyId);
-    console.log('User Role:', user?.role); // Key debug info
+    console.log('User Role:', user?.role);
     console.log('Location ID:', user?.locationId);
     console.log('Assigned Location:', user?.assignedLocation);
     console.log('Location Info:', getLocationInfo());
+    console.log('Token Valid:', isTokenValid());
     console.groupEnd();
   };
 
@@ -273,6 +366,11 @@ export const AuthProvider = ({ children }) => {
     logout,
     registerCompany,
     updateUser,
+    
+    // 🚀 NEW: Token management functions
+    isTokenValid,
+    checkTokenExpiry,
+    handleTokenExpiry,
     
     // Authentication status
     isAuthenticated: !!user,

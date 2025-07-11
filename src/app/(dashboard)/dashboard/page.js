@@ -4,11 +4,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { companyAPI, attendanceAPI } from '@/app/lib/api';
-import { FiUsers, FiClock, FiCalendar, FiTrendingUp, FiRefreshCw } from 'react-icons/fi';
+import { FiUsers, FiClock, FiCalendar, FiTrendingUp, FiRefreshCw, FiPlus, FiCheckCircle, FiXCircle, FiEye } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
-const StatsCard = ({ title, value, icon: Icon, change, changeType }) => (
+const StatsCard = ({ title, value, icon: Icon, change, changeType, href, linkText }) => (
   <div className="group relative bg-white overflow-hidden shadow-lg hover:shadow-xl rounded-2xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
     {/* Subtle gradient accent */}
     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
@@ -29,6 +30,16 @@ const StatsCard = ({ title, value, icon: Icon, change, changeType }) => (
               </div>
             )}
           </dd>
+          {href && linkText && (
+            <div className="mt-3">
+              <Link
+                href={href}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center group-hover:underline"
+              >
+                {linkText} →
+              </Link>
+            </div>
+          )}
         </div>
         <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl group-hover:from-blue-100 group-hover:to-indigo-100 transition-colors duration-300">
           <Icon className="h-7 w-7 text-blue-600" />
@@ -37,6 +48,8 @@ const StatsCard = ({ title, value, icon: Icon, change, changeType }) => (
     </div>
   </div>
 );
+
+
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -191,6 +204,9 @@ export default function DashboardPage() {
     }
   };
 
+  // Check if user can approve leaves (only admin and manager)
+  const canManageLeaves = user?.role === 'admin' || user?.role === 'manager';
+
   // Show loading state
   if (loading) {
     return (
@@ -304,6 +320,8 @@ export default function DashboardPage() {
               icon={FiUsers}
               change="+5.2%"
               changeType="increase"
+              href="/employees"
+              linkText="View details"
             />
             <StatsCard
               title="Present Today"
@@ -311,6 +329,8 @@ export default function DashboardPage() {
               icon={FiClock}
               change="+12%"
               changeType="increase"
+              href="/attendance"
+              linkText="View details"
             />
             <StatsCard
               title="Pending Leaves"
@@ -318,11 +338,15 @@ export default function DashboardPage() {
               icon={FiCalendar}
               change="-8%"
               changeType="decrease"
+              href="/leaves/approved"
+              linkText="View details"
             />
             <StatsCard
               title="Departments"
               value={stats.TotalDepartments || 0}
               icon={FiTrendingUp}
+              href="/departments"
+              linkText="View details"
             />
           </div>
         )}
