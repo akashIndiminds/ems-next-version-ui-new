@@ -1,8 +1,10 @@
+// src/app/(dashboard)/leaves/approved/page.js
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { leaveAPI, dropdownAPI } from '@/app/lib/api';
+import { leaveAPI} from '@/app/lib/api/leaveAPI';
+import { dropdownAPI } from '@/app/lib/api';
 import { 
   FiArrowLeft, FiSearch, FiFilter, FiCalendar, FiUser, 
   FiEdit3, FiX, FiClock, FiCheckCircle, FiAlertTriangle,
@@ -14,10 +16,25 @@ import Link from 'next/link';
 
 export default function LeaveManagementPage() {
   const { user } = useAuth();
+  
+  // Separate state for approved and pending leaves to avoid resetting
   const [approvedLeaves, setApprovedLeaves] = useState([]);
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Loading states for each tab
+  const [loadingStates, setLoadingStates] = useState({
+    pending: false,
+    approved: false,
+    initial: true
+  });
+  
+  // Data fetch status to avoid unnecessary API calls
+  const [dataFetched, setDataFetched] = useState({
+    pending: false,
+    approved: false
+  });
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
@@ -27,7 +44,12 @@ export default function LeaveManagementPage() {
   const [showModifyModal, setShowModifyModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+  
+  // Separate pagination for each tab
+  const [paginationStates, setPaginationStates] = useState({
+    pending: { page: 1, limit: 20, total: 0 },
+    approved: { page: 1, limit: 20, total: 0 }
+  });
 
   // Form states
   const [revokeReason, setRevokeReason] = useState('');
@@ -41,66 +63,97 @@ export default function LeaveManagementPage() {
   const isAdmin = user?.role === 'admin';
   const canManageLeaves = user?.role === 'admin' || user?.role === 'manager';
 
-  useEffect(() => {
-    if (canManageLeaves) {
-      fetchLeaveData();
-      fetchDepartments();
-    }
-  }, [pagination.page, searchTerm, selectedDepartment, dateRange, activeTab, canManageLeaves]);
+  // Get current pagination based on active tab
+  const currentPagination = paginationStates[activeTab];
 
-  const fetchLeaveData = async () => {
+  // Fetch pending leaves
+  const fetchPendingLeaves = useCallback(async (params = {}) => {
+    if (!canManageLeaves) return;
+    
     try {
-      setLoading(true);
-      const params = {
-        page: pagination.page,
-        limit: pagination.limit,
+      setLoadingStates(prev => ({ ...prev, pending: true }));
+      
+      const searchParams = {
+        page: paginationStates.pending.page,
+        limit: paginationStates.pending.limit,
         employeeFilter: searchTerm,
         departmentFilter: selectedDepartment,
         fromDate: dateRange.from,
-        toDate: dateRange.to
+        toDate: dateRange.to,
+        ...params
       };
 
-      if (activeTab === 'pending') {
-        // Fetch pending leaves using the enhanced API
-        const pendingResponse = await leaveAPI.getPending(params);
-        if (pendingResponse.data.success) {
-          setPendingLeaves(pendingResponse.data.data || []);
-          setPagination(prev => ({
-            ...prev,
-            total: pendingResponse.data.total || 0
-          }));
-        } else {
-          console.error('Failed to fetch pending leaves:', pendingResponse.data.message);
-          setPendingLeaves([]);
-        }
+      //console.log('Fetching pending leaves with params:', searchParams);
+      const response = await leaveAPI.getPending(searchParams);
+      
+      if (response.data.success) {
+        setPendingLeaves(response.data.data || []);
+        setPaginationStates(prev => ({
+          ...prev,
+          pending: { ...prev.pending, total: response.data.total || 0 }
+        }));
+        setDataFetched(prev => ({ ...prev, pending: true }));
       } else {
-        // Fetch approved leaves using the new API
-        const approvedResponse = await leaveAPI.getApprovedLeaves(params);
-        if (approvedResponse.data.success) {
-          setApprovedLeaves(approvedResponse.data.data || []);
-          setPagination(prev => ({
-            ...prev,
-            total: approvedResponse.data.total || 0
-          }));
-        } else {
-          console.error('Failed to fetch approved leaves:', approvedResponse.data.message);
-          setApprovedLeaves([]);
-        }
+        console.error('Failed to fetch pending leaves:', response.data.message);
+        setPendingLeaves([]);
+        toast.error(response.data.message || 'Failed to fetch pending leaves');
       }
     } catch (error) {
-      console.error('Error fetching leave data:', error);
-      toast.error('Failed to load leave data');
-      if (activeTab === 'pending') {
-        setPendingLeaves([]);
-      } else {
-        setApprovedLeaves([]);
-      }
+      console.error('Error fetching pending leaves:', error);
+      toast.error('Failed to load pending leaves');
+      setPendingLeaves([]);
     } finally {
-      setLoading(false);
+      setLoadingStates(prev => ({ ...prev, pending: false, initial: false }));
     }
-  };
+  }, [canManageLeaves, searchTerm, selectedDepartment, dateRange.from, dateRange.to, paginationStates.pending.page, paginationStates.pending.limit]);
 
-  const fetchDepartments = async () => {
+  // Fetch approved leaves
+  const fetchApprovedLeaves = useCallback(async (params = {}) => {
+    if (!canManageLeaves) return;
+    
+    try {
+      setLoadingStates(prev => ({ ...prev, approved: true }));
+      
+      const searchParams = {
+        page: paginationStates.approved.page,
+        limit: paginationStates.approved.limit,
+        employeeFilter: searchTerm,
+        departmentFilter: selectedDepartment,
+        fromDate: dateRange.from,
+        toDate: dateRange.to,
+        ...params
+      };
+
+      //console.log('Fetching approved leaves with params:', searchParams);
+      const response = await leaveAPI.getApprovedLeaves(searchParams);
+      
+      if (response.data.success) {
+        setApprovedLeaves(response.data.data || []);
+        setPaginationStates(prev => ({
+          ...prev,
+          approved: { ...prev.approved, total: response.data.total || 0 }
+        }));
+        setDataFetched(prev => ({ ...prev, approved: true }));
+        
+        if (response.data.debug) {
+          //console.log('Debug info:', response.data.debug);
+        }
+      } else {
+        console.error('Failed to fetch approved leaves:', response.data);
+        setApprovedLeaves([]);
+        toast.error(response.data.message || 'Failed to fetch approved leaves');
+      }
+    } catch (error) {
+      console.error('Error fetching approved leaves:', error);
+      toast.error('Failed to load approved leaves');
+      setApprovedLeaves([]);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, approved: false, initial: false }));
+    }
+  }, [canManageLeaves, searchTerm, selectedDepartment, dateRange.from, dateRange.to, paginationStates.approved.page, paginationStates.approved.limit]);
+
+  // Fetch departments
+  const fetchDepartments = useCallback(async () => {
     try {
       const response = await dropdownAPI.getDepartments();
       if (response.data.success) {
@@ -109,6 +162,74 @@ export default function LeaveManagementPage() {
     } catch (error) {
       console.error('Error fetching departments:', error);
     }
+  }, []);
+
+  // Initial data fetch on component mount
+  useEffect(() => {
+    if (canManageLeaves) {
+      fetchDepartments();
+      // Fetch both pending and approved data initially
+      fetchPendingLeaves();
+      fetchApprovedLeaves();
+    }
+  }, [canManageLeaves]); // Only depend on canManageLeaves for initial fetch
+
+  // Handle filter/search changes - refetch data when filters change
+  useEffect(() => {
+    if (canManageLeaves && !loadingStates.initial) {
+      // Reset pagination when filters change
+      setPaginationStates(prev => ({
+        pending: { ...prev.pending, page: 1 },
+        approved: { ...prev.approved, page: 1 }
+      }));
+      
+      // Refetch data for current tab
+      if (activeTab === 'pending') {
+        fetchPendingLeaves();
+      } else {
+        fetchApprovedLeaves();
+      }
+    }
+  }, [searchTerm, selectedDepartment, dateRange.from, dateRange.to]); // Only refetch when actual filters change
+
+  // Handle pagination changes
+  useEffect(() => {
+    if (canManageLeaves && !loadingStates.initial) {
+      if (activeTab === 'pending') {
+        fetchPendingLeaves();
+      } else {
+        fetchApprovedLeaves();
+      }
+    }
+  }, [paginationStates.pending.page, paginationStates.approved.page]); // Only refetch when pagination changes
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    if (activeTab === 'pending') {
+      fetchPendingLeaves();
+    } else {
+      fetchApprovedLeaves();
+    }
+  };
+
+  // Tab switching - no need to refetch if data already exists
+  const handleTabSwitch = (tab) => {
+    setActiveTab(tab);
+    
+    // Only fetch data if it hasn't been fetched yet or if we want to refresh
+    if (tab === 'pending' && !dataFetched.pending) {
+      fetchPendingLeaves();
+    } else if (tab === 'approved' && !dataFetched.approved) {
+      fetchApprovedLeaves();
+    }
+  };
+
+  // Update pagination for specific tab
+  const updatePagination = (tab, updates) => {
+    setPaginationStates(prev => ({
+      ...prev,
+      [tab]: { ...prev[tab], ...updates }
+    }));
   };
 
   const handleUpdateStatus = async (leaveId, status) => {
@@ -124,7 +245,9 @@ export default function LeaveManagementPage() {
       });
       if (response.data.success) {
         toast.success(`Leave ${status.toLowerCase()} successfully`);
-        fetchLeaveData(); // Refresh data
+        // Refresh both tabs since status change affects both
+        fetchPendingLeaves();
+        fetchApprovedLeaves();
       } else {
         toast.error(response.data.message || `Failed to ${status.toLowerCase()} leave`);
       }
@@ -140,17 +263,37 @@ export default function LeaveManagementPage() {
       return;
     }
 
+    const today = new Date();
+    const leaveStartDate = new Date(selectedLeave.FromDate);
+    const leaveEndDate = new Date(selectedLeave.ToDate);
+    
+    let confirmMessage = '';
+    if (leaveStartDate > today) {
+      confirmMessage = 'This is a future leave and will be fully revoked.';
+    } else if (leaveStartDate <= today && today <= leaveEndDate) {
+      const totalDays = Math.ceil((leaveEndDate - leaveStartDate) / (1000 * 60 * 60 * 24)) + 1;
+      const completedDays = Math.ceil((today - leaveStartDate) / (1000 * 60 * 60 * 24)) + 1;
+      const remainingDays = totalDays - completedDays + 1;
+      confirmMessage = `This leave is currently ongoing. ${remainingDays} remaining days will be revoked and restored to balance.`;
+    }
+
+    if (leaveStartDate <= today && today <= leaveEndDate) {
+      if (!confirm(`${confirmMessage}\n\nAre you sure you want to continue?`)) {
+        return;
+      }
+    }
+
     try {
       const response = await leaveAPI.revokeApprovedLeave(selectedLeave.LeaveApplicationID, {
         reason: revokeReason.trim()
       });
 
       if (response.data.success) {
-        toast.success('Leave revoked successfully');
+        toast.success(response.data.message || 'Leave revoked successfully');
         setShowRevokeModal(false);
         setSelectedLeave(null);
         setRevokeReason('');
-        fetchLeaveData(); // Refresh data
+        fetchApprovedLeaves(); // Refresh approved leaves
       } else {
         toast.error(response.data.message || 'Failed to revoke leave');
       }
@@ -166,7 +309,6 @@ export default function LeaveManagementPage() {
       return;
     }
 
-    // Validate dates
     const fromDate = new Date(modifyData.fromDate);
     const toDate = new Date(modifyData.toDate);
     const today = new Date();
@@ -193,7 +335,7 @@ export default function LeaveManagementPage() {
         setShowModifyModal(false);
         setSelectedLeave(null);
         setModifyData({ fromDate: '', toDate: '', reason: '' });
-        fetchLeaveData(); // Refresh data
+        fetchApprovedLeaves(); // Refresh approved leaves
       } else {
         toast.error(response.data.message || 'Failed to modify leave');
       }
@@ -215,7 +357,6 @@ export default function LeaveManagementPage() {
 
       const response = await leaveAPI.exportLeaves(params, 'excel');
       
-      // Handle blob download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -246,6 +387,15 @@ export default function LeaveManagementPage() {
     const fromDate = parseISO(leave.FromDate);
     const toDate = parseISO(leave.ToDate);
 
+    if (leave.ApplicationStatus === 'Revoked') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+          <FiXCircle className="mr-1 h-3 w-3" />
+          Revoked
+        </span>
+      );
+    }
+
     if (isBefore(toDate, today)) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -273,14 +423,17 @@ export default function LeaveManagementPage() {
   const canModifyLeave = (leave) => {
     const today = new Date();
     const fromDate = parseISO(leave.FromDate);
-    return isAdmin && isAfter(fromDate, today); // Can only modify future leaves
+    return isAdmin && isAfter(fromDate, today);
   };
 
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedDepartment('');
     setDateRange({ from: '', to: '' });
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPaginationStates({
+      pending: { page: 1, limit: 20, total: 0 },
+      approved: { page: 1, limit: 20, total: 0 }
+    });
   };
 
   // Redirect if user doesn't have permission
@@ -298,7 +451,8 @@ export default function LeaveManagementPage() {
     );
   }
 
-  if (loading && pagination.page === 1) {
+  // Show loading only for initial load
+  if (loadingStates.initial) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
@@ -307,6 +461,7 @@ export default function LeaveManagementPage() {
   }
 
   const currentData = activeTab === 'pending' ? pendingLeaves : approvedLeaves;
+  const isCurrentTabLoading = loadingStates[activeTab];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -340,11 +495,12 @@ export default function LeaveManagementPage() {
               Export
             </button>
             <button
-              onClick={fetchLeaveData}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={handleRefresh}
+              disabled={isCurrentTabLoading}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              <FiRefreshCw className="mr-2 h-4 w-4" />
-              Refresh
+              <FiRefreshCw className={`mr-2 h-4 w-4 ${isCurrentTabLoading ? 'animate-spin' : ''}`} />
+              {isCurrentTabLoading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -354,10 +510,7 @@ export default function LeaveManagementPage() {
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               <button
-                onClick={() => {
-                  setActiveTab('pending');
-                  setPagination(prev => ({ ...prev, page: 1 }));
-                }}
+                onClick={() => handleTabSwitch('pending')}
                 className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
                   activeTab === 'pending'
                     ? 'border-amber-500 text-amber-600'
@@ -368,10 +521,7 @@ export default function LeaveManagementPage() {
                 Pending Approvals ({pendingLeaves.length})
               </button>
               <button
-                onClick={() => {
-                  setActiveTab('approved');
-                  setPagination(prev => ({ ...prev, page: 1 }));
-                }}
+                onClick={() => handleTabSwitch('approved')}
                 className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
                   activeTab === 'approved'
                     ? 'border-green-500 text-green-600'
@@ -483,12 +633,14 @@ export default function LeaveManagementPage() {
               {activeTab === 'pending' ? (
                 <>
                   <FiClock className="mr-3 text-amber-600" />
-                  Pending Approvals ({pagination.total})
+                  Pending Approvals ({currentPagination.total})
+                  {isCurrentTabLoading && <div className="ml-3 animate-spin rounded-full h-4 w-4 border-2 border-amber-600 border-t-transparent"></div>}
                 </>
               ) : (
                 <>
                   <FiCheckCircle className="mr-3 text-green-600" />
-                  Approved Leaves ({pagination.total})
+                  Approved Leaves ({currentPagination.total})
+                  {isCurrentTabLoading && <div className="ml-3 animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>}
                 </>
               )}
             </h2>
@@ -636,7 +788,7 @@ export default function LeaveManagementPage() {
                     </td>
                   </tr>
                 ))}
-                {currentData.length === 0 && (
+                {currentData.length === 0 && !isCurrentTabLoading && (
                   <tr>
                     <td colSpan={activeTab === 'approved' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
                       {activeTab === 'pending' 
@@ -646,32 +798,42 @@ export default function LeaveManagementPage() {
                     </td>
                   </tr>
                 )}
+                {isCurrentTabLoading && (
+                  <tr>
+                    <td colSpan={activeTab === 'approved' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent mr-3"></div>
+                        Loading {activeTab} leaves...
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
-          {pagination.total > pagination.limit && (
+          {currentPagination.total > currentPagination.limit && (
             <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                {pagination.total} results
+                Showing {((currentPagination.page - 1) * currentPagination.limit) + 1} to{' '}
+                {Math.min(currentPagination.page * currentPagination.limit, currentPagination.total)} of{' '}
+                {currentPagination.total} results
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                  disabled={pagination.page === 1}
+                  onClick={() => updatePagination(activeTab, { page: currentPagination.page - 1 })}
+                  disabled={currentPagination.page === 1 || isCurrentTabLoading}
                   className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   Previous
                 </button>
                 <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-sm">
-                  {pagination.page}
+                  {currentPagination.page}
                 </span>
                 <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                  disabled={pagination.page * pagination.limit >= pagination.total}
+                  onClick={() => updatePagination(activeTab, { page: currentPagination.page + 1 })}
+                  disabled={currentPagination.page * currentPagination.limit >= currentPagination.total || isCurrentTabLoading}
                   className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   Next
@@ -696,21 +858,21 @@ export default function LeaveManagementPage() {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3">Employee Information</h4>
                     <div className="space-y-2">
-                      <p><span className="font-medium">Name:</span> {selectedLeave.EmployeeName}</p>
-                      <p><span className="font-medium">Code:</span> {selectedLeave.EmployeeCode}</p>
-                      <p><span className="font-medium">Department:</span> {selectedLeave.DepartmentName}</p>
+                      <p><span className="font-medium text-gray-900">Name:</span> <span className="text-gray-800">{selectedLeave.EmployeeName}</span></p>
+                      <p><span className="font-medium text-gray-900">Code:</span> <span className="text-gray-800">{selectedLeave.EmployeeCode}</span></p>
+                      <p><span className="font-medium text-gray-900">Department:</span> <span className="text-gray-800">{selectedLeave.DepartmentName}</span></p>
                     </div>
                   </div>
                   
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3">Leave Information</h4>
                     <div className="space-y-2">
-                      <p><span className="font-medium">Type:</span> {selectedLeave.LeaveTypeName}</p>
-                      <p><span className="font-medium">From:</span> {format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')}</p>
-                      <p><span className="font-medium">To:</span> {format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}</p>
-                      <p><span className="font-medium">Total Days:</span> {selectedLeave.TotalDays}</p>
+                      <p><span className="font-medium text-gray-900">Type:</span> <span className="text-gray-800">{selectedLeave.LeaveTypeName}</span></p>
+                      <p><span className="font-medium text-gray-900">From:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')}</span></p>
+                      <p><span className="font-medium text-gray-900">To:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}</span></p>
+                      <p><span className="font-medium text-gray-900">Total Days:</span> <span className="text-gray-800">{selectedLeave.TotalDays}</span></p>
                       {selectedLeave.ApproverName && (
-                        <p><span className="font-medium">Approved By:</span> {selectedLeave.ApproverName}</p>
+                        <p><span className="font-medium text-gray-900">Approved By:</span> <span className="text-gray-800">{selectedLeave.ApproverName}</span></p>
                       )}
                     </div>
                   </div>
@@ -719,7 +881,7 @@ export default function LeaveManagementPage() {
                 {selectedLeave.Reason && (
                   <div className="mt-6">
                     <h4 className="font-semibold text-gray-900 mb-2">Reason</h4>
-                    <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedLeave.Reason}</p>
+                    <p className="text-gray-800 bg-gray-50 p-3 rounded-lg border">{selectedLeave.Reason}</p>
                   </div>
                 )}
                 
@@ -745,34 +907,37 @@ export default function LeaveManagementPage() {
               <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-gray-900">Revoke Leave</h3>
-                  <p className="text-gray-600 mt-2">
+                  <p className="text-gray-700 mt-2">
                     Are you sure you want to revoke this leave? This action will restore the employee's leave balance.
                   </p>
                 </div>
                 
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm">
-                    <strong>{selectedLeave.EmployeeName}</strong> - {selectedLeave.LeaveTypeName}
-                    <br />
-                    {format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')} to {format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}
-                    <br />
-                    {selectedLeave.TotalDays} {selectedLeave.TotalDays === 1 ? 'day' : 'days'}
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="text-sm text-gray-800">
+                    <div className="font-semibold text-gray-900">{selectedLeave.EmployeeName}</div>
+                    <div className="text-gray-800 mt-1">{selectedLeave.LeaveTypeName}</div>
+                    <div className="text-gray-800 mt-1">
+                      {format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')} to {format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}
+                    </div>
+                    <div className="text-gray-800 mt-1">
+                      {selectedLeave.TotalDays} {selectedLeave.TotalDays === 1 ? 'day' : 'days'}
+                    </div>
                   </div>
                 </div>
                 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Reason for Revocation <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={revokeReason}
                     onChange={(e) => setRevokeReason(e.target.value)}
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900"
                     placeholder="Please provide a reason for revoking this leave..."
                     maxLength={500}
                   />
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-600 mt-1">
                     {revokeReason.length}/500 characters
                   </div>
                 </div>
@@ -783,14 +948,14 @@ export default function LeaveManagementPage() {
                       setShowRevokeModal(false);
                       setRevokeReason('');
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleRevokeLeave}
                     disabled={!revokeReason.trim()}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Revoke Leave
                   </button>
@@ -809,15 +974,15 @@ export default function LeaveManagementPage() {
               <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-gray-900">Modify Leave Dates</h3>
-                  <p className="text-gray-600 mt-2">
-                    Update the leave dates for {selectedLeave.EmployeeName}
+                  <p className="text-gray-700 mt-2">
+                    Update the leave dates for <span className="font-medium text-gray-900">{selectedLeave.EmployeeName}</span>
                   </p>
                 </div>
                 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
                         From Date <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -825,11 +990,11 @@ export default function LeaveManagementPage() {
                         value={modifyData.fromDate}
                         onChange={(e) => setModifyData(prev => ({ ...prev, fromDate: e.target.value }))}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-900 mb-1">
                         To Date <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -837,37 +1002,36 @@ export default function LeaveManagementPage() {
                         value={modifyData.toDate}
                         onChange={(e) => setModifyData(prev => ({ ...prev, toDate: e.target.value }))}
                         min={modifyData.fromDate || new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-900 mb-1">
                       Reason for Modification <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       value={modifyData.reason}
                       onChange={(e) => setModifyData(prev => ({ ...prev, reason: e.target.value }))}
                       rows="3"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       placeholder="Please provide a reason for modifying the dates..."
                       maxLength={500}
                     />
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-600 mt-1">
                       {modifyData.reason.length}/500 characters
                     </div>
                   </div>
                   
                   {/* Calculate new total days */}
                   {modifyData.fromDate && modifyData.toDate && (
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <div className="text-sm text-blue-800">
-                        <strong>New Duration:</strong> {
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="text-sm text-blue-900">
+                        <div className="font-medium">New Duration: <span className="font-semibold">{
                           Math.ceil((new Date(modifyData.toDate) - new Date(modifyData.fromDate)) / (1000 * 60 * 60 * 24)) + 1
-                        } days
-                        <br />
-                        <strong>Original Duration:</strong> {selectedLeave.TotalDays} days
+                        } days</span></div>
+                        <div className="font-medium mt-1">Original Duration: <span className="font-semibold">{selectedLeave.TotalDays} days</span></div>
                       </div>
                     </div>
                   )}
@@ -879,14 +1043,14 @@ export default function LeaveManagementPage() {
                       setShowModifyModal(false);
                       setModifyData({ fromDate: '', toDate: '', reason: '' });
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleModifyLeave}
                     disabled={!modifyData.fromDate || !modifyData.toDate || !modifyData.reason.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Modify Leave
                   </button>
@@ -898,4 +1062,4 @@ export default function LeaveManagementPage() {
       </div>
     </div>
   );
-}
+} 

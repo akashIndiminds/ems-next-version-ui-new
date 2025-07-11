@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { leaveAPI, dropdownAPI } from '@/app/lib/api';
+import { leaveAPI, dropdownAPI } from '@/app/lib/api/leaveAPI';
 import { FiPlus, FiCalendar, FiClock, FiUser, FiSettings, FiRefreshCw } from 'react-icons/fi';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';

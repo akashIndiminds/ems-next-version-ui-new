@@ -8,32 +8,70 @@ export const leaveAPI = {
 
   // Apply for leave
   apply: async (data) => {
-    return await apiClient.post('/leaves/apply', data);
+    try {
+      //console.log('Applying for leave with data:', data);
+      const response = await apiClient.post('/leaves/apply', data);
+      //console.log('Leave application response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error applying for leave:', error);
+      throw error;
+    }
   },
 
   // Cancel leave
   cancel: async (leaveId) => {
-    return await apiClient.put(`/leaves/${leaveId}/cancel`);
+    try {
+      //console.log('Cancelling leave:', leaveId);
+      const response = await apiClient.put(`/leaves/${leaveId}/cancel`);
+      //console.log('Cancel leave response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error cancelling leave:', error);
+      throw error;
+    }
   },
 
   // Get employee's leaves with pagination and filters
   getEmployeeLeaves: async (employeeId, params = {}) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    const searchParams = new URLSearchParams();
-    
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
+    try {
+      const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+      const searchParams = new URLSearchParams();
+      
+      Object.keys(params).forEach((key) => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+          searchParams.append(key, params[key]);
+        }
+      });
 
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/employee/${id}${queryString ? `?${queryString}` : ''}`);
+      const queryString = searchParams.toString();
+      const url = `/leaves/employee/${id}${queryString ? `?${queryString}` : ''}`;
+      
+      //console.log('Getting employee leaves:', url);
+      const response = await apiClient.get(url);
+      //console.log('Employee leaves response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting employee leaves:', error);
+      throw error;
+    }
   },
 
   // Get leave balance
   getBalance: async (employeeId, year = null) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    const params = year ? `?year=${year}` : '';
-    return await apiClient.get(`/leaves/balance/${id}${params}`);
+    try {
+      const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+      const params = year ? { year } : {};
+      const url = `/leaves/balance/${id}`;
+      
+      //console.log('Getting leave balance:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave balance response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave balance:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -42,40 +80,76 @@ export const leaveAPI = {
 
   // Get pending leaves for approval
   getPending: async (params = {}) => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/pending${queryString ? `?${queryString}` : ''}`);
+    try {
+      const url = '/leaves/pending';
+      
+      //console.log('Getting pending leaves:', url, 'with params:', params);
+      const response = await apiClient.get(url, params);
+      //console.log('Pending leaves response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting pending leaves:', error);
+      throw error;
+    }
   },
 
   // Update leave status (approve/reject)
   updateStatus: async (leaveId, data) => {
-    return await apiClient.put(`/leaves/${leaveId}/status`, data);
+    try {
+      //console.log('Updating leave status:', leaveId, data);
+      const response = await apiClient.put(`/leaves/${leaveId}/status`, data);
+      //console.log('Update status response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error updating leave status:', error);
+      throw error;
+    }
   },
 
-  // Get approved leaves with advanced filtering
+  // ⭐ FIXED: Get approved leaves with advanced filtering
   getApprovedLeaves: async (params = {}) => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/approved${queryString ? `?${queryString}` : ''}`);
+    try {
+      //console.log('getApprovedLeaves called with params:', params);
+      
+      const url = '/leaves/approved';
+      
+      //console.log('Making API call to:', url);
+      //console.log('Full URL will be:', `${apiClient.baseURL}${url}`);
+      
+      const response = await apiClient.get(url, params);
+      //console.log('✅ Approved leaves response received:', response);
+      
+      // Ensure the response has the expected structure
+      if (response && response.data) {
+        //console.log('Response data structure:', {
+        //   success: response.data.success,
+        //   dataLength: response.data.data?.length,
+        //   total: response.data.total
+        // });
+        return response;
+      } else {
+        console.error('Invalid response structure:', response);
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('❌ Error getting approved leaves:', error);
+      throw error;
+    }
   },
 
   // Get leave statistics for dashboard
   getStatistics: async (params = {}) => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/statistics${queryString ? `?${queryString}` : ''}`);
+    try {
+      const url = '/leaves/statistics';
+      
+      //console.log('Getting leave statistics:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave statistics response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave statistics:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -84,12 +158,28 @@ export const leaveAPI = {
 
   // Revoke approved leave (admin only)
   revokeApprovedLeave: async (leaveId, data) => {
-    return await apiClient.put(`/leaves/${leaveId}/revoke`, data);
+    try {
+      //console.log('Revoking approved leave:', leaveId, data);
+      const response = await apiClient.put(`/leaves/${leaveId}/revoke`, data);
+      //console.log('Revoke leave response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error revoking leave:', error);
+      throw error;
+    }
   },
 
   // Modify approved leave dates (admin only)
   modifyApprovedLeave: async (leaveId, data) => {
-    return await apiClient.put(`/leaves/${leaveId}/modify`, data);
+    try {
+      //console.log('Modifying approved leave:', leaveId, data);
+      const response = await apiClient.put(`/leaves/${leaveId}/modify`, data);
+      //console.log('Modify leave response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error modifying leave:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -98,41 +188,49 @@ export const leaveAPI = {
 
   // Get leave analytics
   getAnalytics: async (params = {}) => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/analytics${queryString ? `?${queryString}` : ''}`);
+    try {
+      const url = '/leaves/analytics';
+      
+      //console.log('Getting leave analytics:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave analytics response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave analytics:', error);
+      throw error;
+    }
   },
 
   // Get leave trends
   getTrends: async (params = {}) => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/trends${queryString ? `?${queryString}` : ''}`);
+    try {
+      const url = '/leaves/trends';
+      
+      //console.log('Getting leave trends:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave trends response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave trends:', error);
+      throw error;
+    }
   },
 
   // Export leave data
   exportLeaves: async (params = {}, format = 'excel') => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-    searchParams.append('format', format);
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/export${queryString ? `?${queryString}` : ''}`, {
-      responseType: 'blob',
-      headers: {
-        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      }
-    });
+    try {
+      const exportParams = { ...params, format };
+      const url = '/leaves/export';
+      
+      //console.log('Exporting leave data:', url);
+      // Note: For blob responses, you might need to handle this differently with fetch
+      const response = await apiClient.get(url, exportParams);
+      //console.log('Export response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error exporting leave data:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -141,27 +239,36 @@ export const leaveAPI = {
 
   // Bulk approve/reject leaves
   bulkUpdateStatus: async (leaveIds, status, remarks = '') => {
-    return await apiClient.put('/leaves/bulk/status', {
-      leaveIds,
-      status,
-      remarks
-    });
+    try {
+      const data = { leaveIds, status, remarks };
+      //console.log('Bulk updating leave status:', data);
+      const response = await apiClient.put('/leaves/bulk/status', data);
+      //console.log('Bulk update response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error bulk updating leave status:', error);
+      throw error;
+    }
   },
 
   // Bulk import leave applications
   bulkImport: async (file, options = {}) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    Object.keys(options).forEach((key) => {
-      formData.append(key, options[key]);
-    });
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      Object.keys(options).forEach((key) => {
+        formData.append(key, options[key]);
+      });
 
-    return await apiClient.post('/leaves/bulk/import', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+      //console.log('Bulk importing leaves:', { fileName: file.name, options });
+      const response = await apiClient.upload('/leaves/bulk/import', formData);
+      //console.log('Bulk import response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error bulk importing leaves:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -170,40 +277,61 @@ export const leaveAPI = {
 
   // Validate leave application before submission
   validateApplication: async (data) => {
-    return await apiClient.post('/leaves/validate', data);
+    try {
+      //console.log('Validating leave application:', data);
+      const response = await apiClient.post('/leaves/validate', data);
+      //console.log('Validation response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error validating leave application:', error);
+      throw error;
+    }
   },
 
   // Check leave balance availability
   checkBalance: async (employeeId, leaveTypeId, totalDays) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    return await apiClient.post('/leaves/check-balance', {
-      employeeId: id,
-      leaveTypeId,
-      totalDays
-    });
+    try {
+      const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+      const data = { employeeId: id, leaveTypeId, totalDays };
+      //console.log('Checking leave balance:', data);
+      const response = await apiClient.post('/leaves/check-balance', data);
+      //console.log('Balance check response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error checking leave balance:', error);
+      throw error;
+    }
   },
 
   // Get leave calendar for employee
   getCalendar: async (employeeId, params = {}) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/calendar/${id}${queryString ? `?${queryString}` : ''}`);
+    try {
+      const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+      const url = `/leaves/calendar/${id}`;
+      
+      //console.log('Getting leave calendar:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave calendar response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave calendar:', error);
+      throw error;
+    }
   },
 
   // Get team leave calendar (for managers)
   getTeamCalendar: async (params = {}) => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/team-calendar${queryString ? `?${queryString}` : ''}`);
+    try {
+      const url = '/leaves/team-calendar';
+      
+      //console.log('Getting team calendar:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Team calendar response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting team calendar:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -212,23 +340,43 @@ export const leaveAPI = {
 
   // Get leave notifications
   getNotifications: async (params = {}) => {
-    const searchParams = new URLSearchParams();
-    Object.keys(params).forEach((key) => {
-      if (params[key]) searchParams.append(key, params[key]);
-    });
-
-    const queryString = searchParams.toString();
-    return await apiClient.get(`/leaves/notifications${queryString ? `?${queryString}` : ''}`);
+    try {
+      const url = '/leaves/notifications';
+      
+      //console.log('Getting leave notifications:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave notifications response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave notifications:', error);
+      throw error;
+    }
   },
 
   // Mark notification as read
   markNotificationRead: async (notificationId) => {
-    return await apiClient.put(`/leaves/notifications/${notificationId}/read`);
+    try {
+      //console.log('Marking notification as read:', notificationId);
+      const response = await apiClient.put(`/leaves/notifications/${notificationId}/read`);
+      //console.log('Mark notification response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
   },
 
   // Send reminder for pending approvals
   sendApprovalReminder: async (leaveId) => {
-    return await apiClient.post(`/leaves/${leaveId}/remind`);
+    try {
+      //console.log('Sending approval reminder:', leaveId);
+      const response = await apiClient.post(`/leaves/${leaveId}/remind`);
+      //console.log('Reminder response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -237,19 +385,47 @@ export const leaveAPI = {
 
   // Get leave policies
   getPolicies: async (companyId = null) => {
-    const params = companyId ? `?companyId=${companyId}` : '';
-    return await apiClient.get(`/leaves/policies${params}`);
+    try {
+      const params = companyId ? { companyId } : {};
+      const url = '/leaves/policies';
+      
+      //console.log('Getting leave policies:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave policies response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave policies:', error);
+      throw error;
+    }
   },
 
   // Update leave policy (admin only)
   updatePolicy: async (policyId, data) => {
-    return await apiClient.put(`/leaves/policies/${policyId}`, data);
+    try {
+      //console.log('Updating leave policy:', policyId, data);
+      const response = await apiClient.put(`/leaves/policies/${policyId}`, data);
+      //console.log('Update policy response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error updating leave policy:', error);
+      throw error;
+    }
   },
 
   // Get leave approval workflow
   getWorkflow: async (departmentId = null) => {
-    const params = departmentId ? `?departmentId=${departmentId}` : '';
-    return await apiClient.get(`/leaves/workflow${params}`);
+    try {
+      const params = departmentId ? { departmentId } : {};
+      const url = '/leaves/workflow';
+      
+      //console.log('Getting leave workflow:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Leave workflow response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave workflow:', error);
+      throw error;
+    }
   },
 
   // ================================
@@ -258,19 +434,92 @@ export const leaveAPI = {
 
   // Quick apply for common leave types
   quickApply: async (data) => {
-    return await apiClient.post('/leaves/quick-apply', data);
+    try {
+      //console.log('Quick applying for leave:', data);
+      const response = await apiClient.post('/leaves/quick-apply', data);
+      //console.log('Quick apply response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error quick applying for leave:', error);
+      throw error;
+    }
   },
 
   // Get today's leave status
   getTodayStatus: async (employeeId) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    return await apiClient.get(`/leaves/today/${id}`);
+    try {
+      const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+      const url = `/leaves/today/${id}`;
+      
+      //console.log('Getting today status:', url);
+      const response = await apiClient.get(url);
+      //console.log('Today status response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting today status:', error);
+      throw error;
+    }
   },
 
   // Get upcoming leaves
   getUpcoming: async (employeeId, days = 30) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    return await apiClient.get(`/leaves/upcoming/${id}?days=${days}`);
+    try {
+      const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+      const params = { days };
+      const url = `/leaves/upcoming/${id}`;
+      
+      //console.log('Getting upcoming leaves:', url);
+      const response = await apiClient.get(url, params);
+      //console.log('Upcoming leaves response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting upcoming leaves:', error);
+      throw error;
+    }
+  }
+};
+
+// ================================
+// DROPDOWN API (for Leave Types)
+// ================================
+export const dropdownAPI = {
+  // Get leave types specifically for leave functionality
+  getLeaveTypes: async () => {
+    try {
+      //console.log('Getting leave types from dropdown API');
+      const response = await apiClient.get('/dropdowns/leave-types');
+      //console.log('Leave types response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting leave types:', error);
+      throw error;
+    }
+  },
+
+  // Get departments for filtering
+  getDepartments: async (companyId) => {
+    try {
+      const params = companyId ? { companyId } : {};
+      const response = await apiClient.get('/dropdowns/departments', params);
+      return response;
+    } catch (error) {
+      console.error('Error getting departments:', error);
+      throw error;
+    }
+  },
+
+  // Get employees for filtering
+  getEmployees: async (companyId, departmentId) => {
+    try {
+      const params = {};
+      if (companyId) params.companyId = companyId;
+      if (departmentId) params.departmentId = departmentId;
+      const response = await apiClient.get('/dropdowns/employees', params);
+      return response;
+    } catch (error) {
+      console.error('Error getting employees:', error);
+      throw error;
+    }
   }
 };
 

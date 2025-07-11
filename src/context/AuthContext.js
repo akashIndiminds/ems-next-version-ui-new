@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }) => {
         const parsedUser = JSON.parse(userData);
         const cleanedUser = cleanUserData(parsedUser);
         
-        console.log('🔍 Auth check - cleaned user data:', cleanedUser);
+        // console.log('🔍 Auth check - cleaned user data:', cleanedUser);
         console.log('🔍 User role:', cleanedUser.role);
         setUser(cleanedUser);
       } catch (error) {

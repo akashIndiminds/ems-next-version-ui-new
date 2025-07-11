@@ -1,4 +1,4 @@
-// src/lib/api.js (Updated version with department-designation mapping)
+// src/lib/api.js (Updated version with leave APIs removed - moved to leaveAPI.js)
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
@@ -115,22 +115,6 @@ export const departmentAPI = {
   }
 };
 
-// Leave APIs
-export const leaveAPI = {
-  apply: (data) => api.post('/leaves/apply', data),
-  updateStatus: (id, data) => api.put(`/leaves/${id}/status`, data),
-  cancel: (id) => api.put(`/leaves/${id}/cancel`),
-  getEmployeeLeaves: (employeeId, params) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    return api.get(`/leaves/employee/${id}`, { params });
-  },
-  getBalance: (employeeId, params) => {
-    const id = Array.isArray(employeeId) ? employeeId[0] : employeeId;
-    return api.get(`/leaves/balance/${id}`, { params });
-  },
-  getPending: (params) => api.get('/leaves/pending', { params }),
-};
-
 // Leave Balance APIs - COMPLETE IMPLEMENTATION
 export const leaveBalanceAPI = {
   // Get all leave types
@@ -178,13 +162,13 @@ export const leaveBalanceAPI = {
 };
 
 // Location APIs
-// Location APIs
 export const locationAPI = {
   getAll: (params) => api.get('/locations', { params }),
   getById: (id) => api.get(`/locations/${id}`),
   getNearby: (lat, lon, params) => api.get(`/locations/nearby/${lat}/${lon}`, { params }),
   validate: (data) => api.post('/locations/validate', data),
 };
+
 // Payment APIs
 export const paymentAPI = {
   createOrder: (data) => api.post('/payments/create-order', data),

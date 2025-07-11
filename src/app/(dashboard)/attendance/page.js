@@ -263,7 +263,7 @@ export default function AttendancePage() {
         </div>
 
         {/* Location Status Card */}
-        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+        {/* <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <FiMapPin className="mr-3 text-green-600" />
@@ -275,7 +275,7 @@ export default function AttendancePage() {
             {userLocation ? (
               <div className="space-y-6">
                 {/* Location Details */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
                     <h3 className="font-semibold text-blue-900 text-lg">{userLocation.locationName}</h3>
                     <p className="text-blue-700 text-sm mt-1">Code: {userLocation.locationCode}</p>
@@ -297,10 +297,10 @@ export default function AttendancePage() {
                     <h4 className="font-semibold text-orange-900">Allowed Radius</h4>
                     <p className="text-orange-700 text-2xl font-bold mt-1">{userLocation.allowedRadius || 100}m</p>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Location Test Button */}
-                <div className="text-center">
+                {/* <div className="text-center">
                   <button
                     onClick={testLocation}
                     disabled={gettingLocation || !userLocation.hasCoordinates}
@@ -309,10 +309,10 @@ export default function AttendancePage() {
                     <FiTarget className="mr-2" />
                     {gettingLocation ? 'Getting Location...' : 'Test My Location'}
                   </button>
-                </div>
+                </div> */}
 
                 {/* Location Validation Result */}
-                {locationValidation && (
+                {/* {locationValidation && (
                   <div className={`p-4 rounded-xl border-2 ${
                     locationValidation.success 
                       ? 'bg-green-50 border-green-200' 
@@ -344,10 +344,10 @@ export default function AttendancePage() {
                       </div>
                     )}
                   </div>
-                )}
+                )} */}
 
                 {/* Current Location Display */}
-                {currentLocation && (
+                {/* {currentLocation && (
                   <div className="bg-gray-50 rounded-xl p-4">
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                       <FiNavigation className="mr-2 text-gray-600" />
@@ -372,20 +372,21 @@ export default function AttendancePage() {
               </div>
             ) : (
               /* No Location Assigned */
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                <div className="flex items-center">
-                  <FiAlertTriangle className="h-6 w-6 text-yellow-600 mr-3" />
-                  <div>
-                    <h3 className="text-yellow-800 font-semibold">No Location Assigned</h3>
-                    <p className="text-yellow-700 text-sm mt-1">
-                      Please contact your administrator to assign a location to your account for attendance marking.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+            //   <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            //     <div className="flex items-center">
+            //       <FiAlertTriangle className="h-6 w-6 text-yellow-600 mr-3" />
+            //       <div>
+            //         <h3 className="text-yellow-800 font-semibold">No Location Assigned</h3>
+            //         <p className="text-yellow-700 text-sm mt-1">
+            //           Please contact your administrator to assign a location to your account for attendance marking.
+            //         </p>
+            //       </div>
+            //     </div>
+            //   </div>
+            // )}
+        //   </div> */}
+        // </div> */
+        }
 
         {/* Today's Attendance Card */}
         <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">

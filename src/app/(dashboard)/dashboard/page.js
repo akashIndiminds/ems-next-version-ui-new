@@ -329,7 +329,7 @@ export default function DashboardPage() {
               icon={FiClock}
               change="+12%"
               changeType="increase"
-              href="/attendance"
+              href="/attendanceManagement"
               linkText="View details"
             />
             <StatsCard
