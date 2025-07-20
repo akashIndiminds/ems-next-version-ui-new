@@ -325,7 +325,7 @@ export default function SetAttendanceStatusPage() {
                   <button
                     type="button"
                     onClick={() => setShowEmployeeSearch(true)}
-                    className="w-full px-4 py-3 text-left border border-gray-300 rounded-xl bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    className="w-full px-4 py-3 text-left border border-gray-300 rounded-xl bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black transition-colors duration-200"
                   >
                     {selectedEmployeeDetails ? (
                       <div className="flex items-center">
@@ -362,7 +362,7 @@ export default function SetAttendanceStatusPage() {
                                 placeholder="Search employees..."
                                 value={employeeSearchTerm}
                                 onChange={(e) => handleEmployeeSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                               />
                             </div>
                           </div>
@@ -428,7 +428,7 @@ export default function SetAttendanceStatusPage() {
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     max={new Date().toISOString().split('T')[0]}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
                 </div>
               </div>
@@ -558,7 +558,7 @@ export default function SetAttendanceStatusPage() {
                         type="time"
                         value={formData.checkInTime}
                         onChange={(e) => setFormData({...formData, checkInTime: e.target.value})}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       />
                     </div>
                   </div>
@@ -574,7 +574,7 @@ export default function SetAttendanceStatusPage() {
                         type="time"
                         value={formData.checkOutTime}
                         onChange={(e) => setFormData({...formData, checkOutTime: e.target.value})}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       />
                     </div>
                   </div>
@@ -624,7 +624,7 @@ export default function SetAttendanceStatusPage() {
                     rows="3"
                     value={formData.remarks}
                     onChange={(e) => setFormData({...formData, remarks: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     placeholder="Optional remarks about this attendance record..."
                     maxLength={500}
                   />

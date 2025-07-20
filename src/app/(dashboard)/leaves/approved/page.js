@@ -559,7 +559,7 @@ export default function LeaveManagementPage() {
                 placeholder="Search by employee name or code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
               />
             </div>
 
@@ -573,7 +573,7 @@ export default function LeaveManagementPage() {
                   <select
                     value={selectedDepartment}
                     onChange={(e) => setSelectedDepartment(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   >
                     <option value="">All Departments</option>
                     {departments.map((dept) => (
@@ -591,7 +591,7 @@ export default function LeaveManagementPage() {
                     type="date"
                     value={dateRange.from}
                     onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
                 </div>
                 <div>
@@ -602,7 +602,7 @@ export default function LeaveManagementPage() {
                     type="date"
                     value={dateRange.to}
                     onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
                 </div>
               </div>
@@ -990,7 +990,7 @@ export default function LeaveManagementPage() {
                         value={modifyData.fromDate}
                         onChange={(e) => setModifyData(prev => ({ ...prev, fromDate: e.target.value }))}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black text-gray-900"
                       />
                     </div>
                     <div>
@@ -1002,7 +1002,7 @@ export default function LeaveManagementPage() {
                         value={modifyData.toDate}
                         onChange={(e) => setModifyData(prev => ({ ...prev, toDate: e.target.value }))}
                         min={modifyData.fromDate || new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black text-gray-900"
                       />
                     </div>
                   </div>
@@ -1015,7 +1015,7 @@ export default function LeaveManagementPage() {
                       value={modifyData.reason}
                       onChange={(e) => setModifyData(prev => ({ ...prev, reason: e.target.value }))}
                       rows="3"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black text-gray-900"
                       placeholder="Please provide a reason for modifying the dates..."
                       maxLength={500}
                     />

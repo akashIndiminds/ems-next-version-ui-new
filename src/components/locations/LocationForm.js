@@ -200,7 +200,7 @@ const LocationForm = ({
               meters
             </span>
           </div>
-          <div className="mt-2 text-xs text-gray-500">
+          {/* <div className="mt-2 text-xs text-gray-500">
             <p>Recommended ranges:</p>
             <ul className="mt-1 space-y-1">
               <li>• Small office/shop: 30-50m</li>
@@ -208,11 +208,11 @@ const LocationForm = ({
               <li>• Large office/mall: 100-200m</li>
               <li>• Campus/factory: 200-500m</li>
             </ul>
-          </div>
+          </div> */}
         </div>
 
         {/* Business Hours */}
-        <div>
+        {/* <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Business Hours
           </label>
@@ -236,7 +236,7 @@ const LocationForm = ({
               />
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Additional Location Info */}
         {(formData.city || formData.state || formData.country || formData.timezone) && (

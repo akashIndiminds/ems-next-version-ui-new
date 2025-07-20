@@ -31,7 +31,7 @@ const sidebarItems = [
     category: 'attendance'
   },
   { 
-    name: 'Attendance Reports', 
+    name: 'Attendance Manager', 
     href: '/attendanceManagement', 
     icon: FiBarChart, 
     roles: ['admin', 'manager'],

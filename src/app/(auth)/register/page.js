@@ -155,7 +155,7 @@ export default function RegisterPage() {
                           required
                           value={formData.companyName}
                           onChange={handleChange}
-                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                           placeholder="Your Company Name"
                         />
                       </div>
@@ -172,7 +172,7 @@ export default function RegisterPage() {
                         required
                         value={formData.companyCode}
                         onChange={handleChange}
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm uppercase"
+                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black uppercase"
                         placeholder="COMP001"
                       />
                     </div>
@@ -193,7 +193,7 @@ export default function RegisterPage() {
                         required
                         value={formData.email}
                         onChange={handleChange}
-                        className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                         placeholder="company@example.com"
                       />
                     </div>
@@ -214,7 +214,7 @@ export default function RegisterPage() {
                           type="tel"
                           value={formData.contactNumber}
                           onChange={handleChange}
-                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                           placeholder="+91 9876543210"
                         />
                       </div>
@@ -234,7 +234,7 @@ export default function RegisterPage() {
                           type="date"
                           value={formData.establishedDate}
                           onChange={handleChange}
-                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                         />
                       </div>
                     </div>
@@ -250,7 +250,7 @@ export default function RegisterPage() {
                       rows="3"
                       value={formData.address}
                       onChange={handleChange}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                       placeholder="Enter company address"
                     />
                   </div>
@@ -284,7 +284,7 @@ export default function RegisterPage() {
                         required
                         value={formData.adminFirstName}
                         onChange={handleChange}
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                         placeholder="John"
                       />
                     </div>
@@ -300,7 +300,7 @@ export default function RegisterPage() {
                         required
                         value={formData.adminLastName}
                         onChange={handleChange}
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                         placeholder="Doe"
                       />
                     </div>
@@ -321,7 +321,7 @@ export default function RegisterPage() {
                         required
                         value={formData.adminEmail}
                         onChange={handleChange}
-                        className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                         placeholder="admin@company.com"
                       />
                     </div>
@@ -342,7 +342,7 @@ export default function RegisterPage() {
                           type="tel"
                           value={formData.adminMobile}
                           onChange={handleChange}
-                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                           placeholder="+91 9876543210"
                         />
                       </div>
@@ -358,7 +358,7 @@ export default function RegisterPage() {
                         type="date"
                         value={formData.adminDateOfBirth}
                         onChange={handleChange}
-                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                       />
                     </div>
                   </div>
@@ -379,7 +379,7 @@ export default function RegisterPage() {
                           required
                           value={formData.adminPassword}
                           onChange={handleChange}
-                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                           placeholder="Minimum 8 characters"
                         />
                       </div>
@@ -400,7 +400,7 @@ export default function RegisterPage() {
                           required
                           value={formData.adminConfirmPassword}
                           onChange={handleChange}
-                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                           placeholder="Confirm your password"
                         />
                       </div>
@@ -416,7 +416,7 @@ export default function RegisterPage() {
                       name="adminGender"
                       value={formData.adminGender}
                       onChange={handleChange}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                     >
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
