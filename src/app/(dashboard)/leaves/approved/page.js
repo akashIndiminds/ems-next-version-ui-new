@@ -8,9 +8,11 @@ import { dropdownAPI } from '@/app/lib/api';
 import { 
   FiArrowLeft, FiSearch, FiFilter, FiCalendar, FiUser, 
   FiEdit3, FiX, FiClock, FiCheckCircle, FiAlertTriangle,
-  FiEye, FiRefreshCw, FiCheck, FiXCircle, FiDownload
+  FiEye, FiRefreshCw, FiCheck, FiXCircle, FiDownload,
+  FiHistory,
+  FiHardDrive
 } from 'react-icons/fi';
-import { format, parseISO, isAfter, isBefore } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, differenceInHours } from 'date-fns';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -43,6 +45,8 @@ export default function LeaveManagementPage() {
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [showModifyModal, setShowModifyModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [leaveHistory, setLeaveHistory] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
   
   // Separate pagination for each tab
@@ -66,6 +70,42 @@ export default function LeaveManagementPage() {
   // Get current pagination based on active tab
   const currentPagination = paginationStates[activeTab];
 
+  // NEW: Check if leave can be modified/revoked (12-hour rule)
+  const canModifyOrRevokeLeave = (leave) => {
+    if (!isAdmin && user?.role !== 'manager') return false;
+    if (leave.IsRevoked) return false;
+    
+    const now = new Date();
+    const leaveStartDate = parseISO(leave.FromDate);
+    const hoursDifference = differenceInHours(leaveStartDate, now);
+    
+    return hoursDifference >= 12; // At least 12 hours before leave starts
+  };
+
+  // NEW: Check if leave can be revoked (only admin, 12-hour rule)
+  const canRevokeLeave = (leave) => {
+    if (!isAdmin) return false;
+    if (leave.IsRevoked) return false;
+    
+    const now = new Date();
+    const leaveStartDate = parseISO(leave.FromDate);
+    const hoursDifference = differenceInHours(leaveStartDate, now);
+    
+    return hoursDifference >= 12; // At least 12 hours before leave starts
+  };
+
+  // NEW: Check if leave can be modified (admin/manager, 12-hour rule)
+  const canModifyLeave = (leave) => {
+    if (!canManageLeaves) return false;
+    if (leave.IsRevoked) return false;
+    
+    const now = new Date();
+    const leaveStartDate = parseISO(leave.FromDate);
+    const hoursDifference = differenceInHours(leaveStartDate, now);
+    
+    return hoursDifference >= 12; // At least 12 hours before leave starts
+  };
+
   // Fetch pending leaves
   const fetchPendingLeaves = useCallback(async (params = {}) => {
     if (!canManageLeaves) return;
@@ -83,7 +123,6 @@ export default function LeaveManagementPage() {
         ...params
       };
 
-      //console.log('Fetching pending leaves with params:', searchParams);
       const response = await leaveAPI.getPending(searchParams);
       
       if (response.data.success) {
@@ -124,7 +163,9 @@ export default function LeaveManagementPage() {
         ...params
       };
 
-      //console.log('Fetching approved leaves with params:', searchParams);
+      console.log('Fetching approved leaves with correct params:', searchParams);
+      
+      // FIXED: Pass params correctly without nesting
       const response = await leaveAPI.getApprovedLeaves(searchParams);
       
       if (response.data.success) {
@@ -136,7 +177,7 @@ export default function LeaveManagementPage() {
         setDataFetched(prev => ({ ...prev, approved: true }));
         
         if (response.data.debug) {
-          //console.log('Debug info:', response.data.debug);
+          console.log('Debug info:', response.data.debug);
         }
       } else {
         console.error('Failed to fetch approved leaves:', response.data);
@@ -163,6 +204,23 @@ export default function LeaveManagementPage() {
       console.error('Error fetching departments:', error);
     }
   }, []);
+
+  // NEW: Fetch leave history
+  const fetchLeaveHistory = async (leaveId) => {
+    try {
+      const response = await leaveAPI.getLeaveHistory(leaveId);
+      if (response.data.success) {
+        setLeaveHistory(response.data.data || []);
+      } else {
+        toast.error('Failed to fetch leave history');
+        setLeaveHistory([]);
+      }
+    } catch (error) {
+      console.error('Error fetching leave history:', error);
+      toast.error('Failed to load leave history');
+      setLeaveHistory([]);
+    }
+  };
 
   // Initial data fetch on component mount
   useEffect(() => {
@@ -257,52 +315,7 @@ export default function LeaveManagementPage() {
     }
   };
 
-  const handleRevokeLeave = async () => {
-    if (!selectedLeave || !revokeReason.trim()) {
-      toast.error('Please provide a reason for revocation');
-      return;
-    }
-
-    const today = new Date();
-    const leaveStartDate = new Date(selectedLeave.FromDate);
-    const leaveEndDate = new Date(selectedLeave.ToDate);
-    
-    let confirmMessage = '';
-    if (leaveStartDate > today) {
-      confirmMessage = 'This is a future leave and will be fully revoked.';
-    } else if (leaveStartDate <= today && today <= leaveEndDate) {
-      const totalDays = Math.ceil((leaveEndDate - leaveStartDate) / (1000 * 60 * 60 * 24)) + 1;
-      const completedDays = Math.ceil((today - leaveStartDate) / (1000 * 60 * 60 * 24)) + 1;
-      const remainingDays = totalDays - completedDays + 1;
-      confirmMessage = `This leave is currently ongoing. ${remainingDays} remaining days will be revoked and restored to balance.`;
-    }
-
-    if (leaveStartDate <= today && today <= leaveEndDate) {
-      if (!confirm(`${confirmMessage}\n\nAre you sure you want to continue?`)) {
-        return;
-      }
-    }
-
-    try {
-      const response = await leaveAPI.revokeApprovedLeave(selectedLeave.LeaveApplicationID, {
-        reason: revokeReason.trim()
-      });
-
-      if (response.data.success) {
-        toast.success(response.data.message || 'Leave revoked successfully');
-        setShowRevokeModal(false);
-        setSelectedLeave(null);
-        setRevokeReason('');
-        fetchApprovedLeaves(); // Refresh approved leaves
-      } else {
-        toast.error(response.data.message || 'Failed to revoke leave');
-      }
-    } catch (error) {
-      console.error('Error revoking leave:', error);
-      toast.error(error.response?.data?.message || 'Failed to revoke leave');
-    }
-  };
-
+  // NEW: Handle leave modification
   const handleModifyLeave = async () => {
     if (!selectedLeave || !modifyData.fromDate || !modifyData.toDate || !modifyData.reason.trim()) {
       toast.error('Please fill in all required fields');
@@ -311,15 +324,27 @@ export default function LeaveManagementPage() {
 
     const fromDate = new Date(modifyData.fromDate);
     const toDate = new Date(modifyData.toDate);
-    const today = new Date();
+    const now = new Date();
 
-    if (fromDate < today) {
+    if (fromDate < now) {
       toast.error('From date cannot be in the past');
       return;
     }
 
     if (toDate < fromDate) {
       toast.error('To date cannot be before from date');
+      return;
+    }
+
+    // Check 12-hour rule
+    const hoursDifference = differenceInHours(fromDate, now);
+    if (hoursDifference < 12) {
+      toast.error('Leave can only be modified at least 12 hours before the start date');
+      return;
+    }
+
+    if (modifyData.reason.trim().length < 10) {
+      toast.error('Reason must be at least 10 characters long');
       return;
     }
 
@@ -342,6 +367,54 @@ export default function LeaveManagementPage() {
     } catch (error) {
       console.error('Error modifying leave:', error);
       toast.error(error.response?.data?.message || 'Failed to modify leave');
+    }
+  };
+
+  // NEW: Handle leave revocation
+  const handleRevokeLeave = async () => {
+    if (!selectedLeave || !revokeReason.trim()) {
+      toast.error('Please provide a reason for revocation');
+      return;
+    }
+
+    if (revokeReason.trim().length < 10) {
+      toast.error('Revocation reason must be at least 10 characters long');
+      return;
+    }
+
+    // Check 12-hour rule
+    const now = new Date();
+    const leaveStartDate = parseISO(selectedLeave.FromDate);
+    const hoursDifference = differenceInHours(leaveStartDate, now);
+    
+    if (hoursDifference < 12) {
+      toast.error('Leave can only be revoked at least 12 hours before the start date');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to revoke this leave? This will restore ${selectedLeave.TotalDays} days to the employee's leave balance.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await leaveAPI.revokeApprovedLeave(selectedLeave.LeaveApplicationID, {
+        reason: revokeReason.trim()
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.message || 'Leave revoked successfully');
+        setShowRevokeModal(false);
+        setSelectedLeave(null);
+        setRevokeReason('');
+        fetchApprovedLeaves(); // Refresh approved leaves
+      } else {
+        toast.error(response.data.message || 'Failed to revoke leave');
+      }
+    } catch (error) {
+      console.error('Error revoking leave:', error);
+      toast.error(error.response?.data?.message || 'Failed to revoke leave');
     }
   };
 
@@ -383,18 +456,19 @@ export default function LeaveManagementPage() {
       );
     }
 
-    const today = new Date();
-    const fromDate = parseISO(leave.FromDate);
-    const toDate = parseISO(leave.ToDate);
-
-    if (leave.ApplicationStatus === 'Revoked') {
+    // Check if leave is revoked
+    if (leave.IsRevoked) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
           <FiXCircle className="mr-1 h-3 w-3" />
           Revoked
         </span>
       );
     }
+
+    const today = new Date();
+    const fromDate = parseISO(leave.FromDate);
+    const toDate = parseISO(leave.ToDate);
 
     if (isBefore(toDate, today)) {
       return (
@@ -420,12 +494,6 @@ export default function LeaveManagementPage() {
     }
   };
 
-  const canModifyLeave = (leave) => {
-    const today = new Date();
-    const fromDate = parseISO(leave.FromDate);
-    return isAdmin && isAfter(fromDate, today);
-  };
-
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedDepartment('');
@@ -434,6 +502,25 @@ export default function LeaveManagementPage() {
       pending: { page: 1, limit: 20, total: 0 },
       approved: { page: 1, limit: 20, total: 0 }
     });
+  };
+
+  // NEW: Get time remaining before 12-hour deadline
+  const getTimeRemainingInfo = (leave) => {
+    const now = new Date();
+    const leaveStartDate = parseISO(leave.FromDate);
+    const hoursDifference = differenceInHours(leaveStartDate, now);
+    
+    if (hoursDifference < 12) {
+      return {
+        canModify: false,
+        message: `Cannot modify/revoke (less than 12 hours remaining)`
+      };
+    }
+    
+    return {
+      canModify: true,
+      message: `${Math.floor(hoursDifference)} hours remaining to modify/revoke`
+    };
   };
 
   // Redirect if user doesn't have permission
@@ -676,118 +763,161 @@ export default function LeaveManagementPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentData.map((leave, index) => (
-                  <tr key={leave.LeaveApplicationID} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <FiUser className="h-5 w-5 text-blue-600" />
+                {currentData.map((leave, index) => {
+                  const timeInfo = activeTab === 'approved' ? getTimeRemainingInfo(leave) : null;
+                  
+                  return (
+                    <tr key={leave.LeaveApplicationID} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <FiUser className="h-5 w-5 text-blue-600" />
+                            </div>
                           </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{leave.EmployeeName}</div>
-                          <div className="text-sm text-gray-500">{leave.EmployeeCode}</div>
-                          <div className="text-xs text-gray-500">{leave.DepartmentName}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {leave.LeaveTypeName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      <div>
-                        <div className="font-medium">
-                          {format(parseISO(leave.FromDate), 'MMM d, yyyy')}
-                        </div>
-                        <div className="text-xs text-gray-500">to</div>
-                        <div className="font-medium">
-                          {format(parseISO(leave.ToDate), 'MMM d, yyyy')}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {leave.TotalDays} {leave.TotalDays === 1 ? 'day' : 'days'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getLeaveStatusBadge(leave)}
-                    </td>
-                    {activeTab === 'approved' && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        <div>
-                          <div className="font-medium">{leave.ApproverName || 'System'}</div>
-                          <div className="text-xs text-gray-500">
-                            {leave.ApprovedDate ? format(parseISO(leave.ApprovedDate), 'MMM d, yyyy') : '-'}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{leave.EmployeeName}</div>
+                            <div className="text-sm text-gray-500">{leave.EmployeeCode}</div>
+                            <div className="text-xs text-gray-500">{leave.DepartmentName}</div>
                           </div>
                         </div>
                       </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedLeave(leave);
-                            setShowViewModal(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
-                          title="View Details"
-                        >
-                          <FiEye className="h-4 w-4" />
-                        </button>
-                        
-                        {activeTab === 'pending' && (
-                          <>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {leave.LeaveTypeName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <div>
+                          <div className="font-medium">
+                            {format(parseISO(leave.FromDate), 'MMM d, yyyy')}
+                          </div>
+                          <div className="text-xs text-gray-500">to</div>
+                          <div className="font-medium">
+                            {format(parseISO(leave.ToDate), 'MMM d, yyyy')}
+                          </div>
+                          {/* NEW: Show modification/revocation deadline info */}
+                          {activeTab === 'approved' && !leave.IsRevoked && timeInfo && (
+                            <div className={`text-xs mt-1 ${timeInfo.canModify ? 'text-green-600' : 'text-red-600'}`}>
+                              {timeInfo.message}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {leave.TotalDays} {leave.TotalDays === 1 ? 'day' : 'days'}
+                        {/* NEW: Show modification indicator */}
+                        {leave.ModifiedDate && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            Modified
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getLeaveStatusBadge(leave)}
+                      </td>
+                      {activeTab === 'approved' && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <div>
+                            <div className="font-medium">{leave.ApproverName || 'System'}</div>
+                            <div className="text-xs text-gray-500">
+                              {leave.ApprovedDate ? format(parseISO(leave.ApprovedDate), 'MMM d, yyyy') : '-'}
+                            </div>
+                            {/* NEW: Show modifier/revoker info */}
+                            {leave.ModifiedDate && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                Modified by {leave.ModifierName}
+                              </div>
+                            )}
+                            {leave.IsRevoked && (
+                              <div className="text-xs text-red-600 mt-1">
+                                Revoked by {leave.RevokerName}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setSelectedLeave(leave);
+                              setShowViewModal(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
+                            title="View Details"
+                          >
+                            <FiEye className="h-4 w-4" />
+                          </button>
+                          
+                          {/* NEW: History button for approved leaves */}
+                          {activeTab === 'approved' && canManageLeaves && (
                             <button
-                              onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Approved')}
-                              className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50 transition-colors"
-                              title="Approve"
+                              onClick={async () => {
+                                setSelectedLeave(leave);
+                                await fetchLeaveHistory(leave.LeaveApplicationID);
+                                setShowHistoryModal(true);
+                              }}
+                              className="text-purple-600 hover:text-purple-800 p-1 rounded hover:bg-purple-50 transition-colors"
+                              title="View History"
                             >
-                              <FiCheck className="h-4 w-4" />
+                              <FiHardDrive className="h-4 w-4" />
                             </button>
+                          )}
+                          
+                          {activeTab === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Approved')}
+                                className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50 transition-colors"
+                                title="Approve"
+                              >
+                                <FiCheck className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Rejected')}
+                                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                title="Reject"
+                              >
+                                <FiX className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          
+                          {/* NEW: Updated modify/revoke buttons with 12-hour rule */}
+                          {activeTab === 'approved' && canModifyLeave(leave) && (
                             <button
-                              onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Rejected')}
+                              onClick={() => {
+                                setSelectedLeave(leave);
+                                setModifyData({
+                                  fromDate: leave.FromDate.split('T')[0],
+                                  toDate: leave.ToDate.split('T')[0],
+                                  reason: ''
+                                });
+                                setShowModifyModal(true);
+                              }}
+                              className="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-50 transition-colors"
+                              title="Modify Dates"
+                            >
+                              <FiEdit3 className="h-4 w-4" />
+                            </button>
+                          )}
+                          
+                          {activeTab === 'approved' && canRevokeLeave(leave) && (
+                            <button
+                              onClick={() => {
+                                setSelectedLeave(leave);
+                                setShowRevokeModal(true);
+                              }}
                               className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                              title="Reject"
+                              title="Revoke Leave"
                             >
-                              <FiX className="h-4 w-4" />
+                              <FiXCircle className="h-4 w-4" />
                             </button>
-                          </>
-                        )}
-                        
-                        {activeTab === 'approved' && canModifyLeave(leave) && (
-                          <button
-                            onClick={() => {
-                              setSelectedLeave(leave);
-                              setModifyData({
-                                fromDate: leave.FromDate.split('T')[0],
-                                toDate: leave.ToDate.split('T')[0],
-                                reason: ''
-                              });
-                              setShowModifyModal(true);
-                            }}
-                            className="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-50 transition-colors"
-                            title="Modify Dates"
-                          >
-                            <FiEdit3 className="h-4 w-4" />
-                          </button>
-                        )}
-                        
-                        {activeTab === 'approved' && isAdmin && (
-                          <button
-                            onClick={() => {
-                              setSelectedLeave(leave);
-                              setShowRevokeModal(true);
-                            }}
-                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                            title="Revoke Leave"
-                          >
-                            <FiXCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {currentData.length === 0 && !isCurrentTabLoading && (
                   <tr>
                     <td colSpan={activeTab === 'approved' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
@@ -874,6 +1004,19 @@ export default function LeaveManagementPage() {
                       {selectedLeave.ApproverName && (
                         <p><span className="font-medium text-gray-900">Approved By:</span> <span className="text-gray-800">{selectedLeave.ApproverName}</span></p>
                       )}
+                      {/* NEW: Show modification/revocation info */}
+                      {selectedLeave.ModifiedDate && (
+                        <>
+                          <p><span className="font-medium text-gray-900">Modified By:</span> <span className="text-gray-800">{selectedLeave.ModifierName}</span></p>
+                          <p><span className="font-medium text-gray-900">Modified Date:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.ModifiedDate), 'MMM d, yyyy')}</span></p>
+                        </>
+                      )}
+                      {selectedLeave.IsRevoked && (
+                        <>
+                          <p><span className="font-medium text-gray-900">Revoked By:</span> <span className="text-gray-800">{selectedLeave.RevokerName}</span></p>
+                          <p><span className="font-medium text-gray-900">Revoked Date:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.RevokedDate), 'MMM d, yyyy')}</span></p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -884,10 +1027,131 @@ export default function LeaveManagementPage() {
                     <p className="text-gray-800 bg-gray-50 p-3 rounded-lg border">{selectedLeave.Reason}</p>
                   </div>
                 )}
+
+                {/* NEW: Show modification/revocation reasons */}
+                {selectedLeave.ModificationReason && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-gray-900 mb-2">Modification Reason</h4>
+                    <p className="text-gray-800 bg-blue-50 p-3 rounded-lg border border-blue-200">{selectedLeave.ModificationReason}</p>
+                  </div>
+                )}
+
+                {selectedLeave.RevocationReason && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-gray-900 mb-2">Revocation Reason</h4>
+                    <p className="text-gray-800 bg-red-50 p-3 rounded-lg border border-red-200">{selectedLeave.RevocationReason}</p>
+                  </div>
+                )}
                 
                 <div className="flex justify-end mt-6">
                   <button
                     onClick={() => setShowViewModal(false)}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* NEW: History Modal */}
+        {showHistoryModal && selectedLeave && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4">
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowHistoryModal(false)}></div>
+              
+              <div className="relative bg-white rounded-xl max-w-4xl w-full p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Leave Modification History</h3>
+                  <p className="text-gray-600 mt-1">
+                    {selectedLeave.EmployeeName} - {selectedLeave.LeaveTypeName}
+                  </p>
+                </div>
+                
+                {leaveHistory.length > 0 ? (
+                  <div className="space-y-4">
+                    {leaveHistory.map((history, index) => (
+                      <div key={history.HistoryID} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-gray-900">{history.ModificationType}</span>
+                          <span className="text-sm text-gray-500">
+                            {format(parseISO(history.ModifiedDate), 'MMM d, yyyy HH:mm')}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          {history.ModificationType === 'DateChange' && (
+                            <>
+                              <div>
+                                <span className="font-medium text-gray-700">Old Dates:</span>
+                                <div className="text-gray-600">
+                                  {history.OldFromDate ? format(parseISO(history.OldFromDate), 'MMM d, yyyy') : '-'} to{' '}
+                                  {history.OldToDate ? format(parseISO(history.OldToDate), 'MMM d, yyyy') : '-'}
+                                </div>
+                                <div className="text-gray-600">
+                                  Days: {history.OldTotalDays || '-'}
+                                </div>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">New Dates:</span>
+                                <div className="text-gray-600">
+                                  {history.NewFromDate ? format(parseISO(history.NewFromDate), 'MMM d, yyyy') : '-'} to{' '}
+                                  {history.NewToDate ? format(parseISO(history.NewToDate), 'MMM d, yyyy') : '-'}
+                                </div>
+                                <div className="text-gray-600">
+                                  Days: {history.NewTotalDays || '-'}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                          
+                          {history.ModificationType === 'StatusChange' && (
+                            <>
+                              <div>
+                                <span className="font-medium text-gray-700">Old Status:</span>
+                                <div className="text-gray-600">{history.OldStatus || '-'}</div>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">New Status:</span>
+                                <div className="text-gray-600">{history.NewStatus || '-'}</div>
+                              </div>
+                            </>
+                          )}
+                          
+                          {history.ModificationType === 'Revocation' && (
+                            <div className="col-span-2">
+                              <span className="font-medium text-gray-700">Leave Revoked</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="mt-2">
+                          <span className="font-medium text-gray-700">Modified By:</span>
+                          <span className="text-gray-600 ml-2">{history.ModifierName}</span>
+                        </div>
+                        
+                        {history.Reason && (
+                          <div className="mt-2">
+                            <span className="font-medium text-gray-700">Reason:</span>
+                            <div className="text-gray-600 mt-1 bg-gray-50 p-2 rounded border">
+                              {history.Reason}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No modification history found for this leave.
+                  </div>
+                )}
+                
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={() => setShowHistoryModal(false)}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     Close
@@ -938,7 +1202,7 @@ export default function LeaveManagementPage() {
                     maxLength={500}
                   />
                   <div className="text-xs text-gray-600 mt-1">
-                    {revokeReason.length}/500 characters
+                    {revokeReason.length}/500 characters (minimum 10 characters)
                   </div>
                 </div>
                 
@@ -954,7 +1218,7 @@ export default function LeaveManagementPage() {
                   </button>
                   <button
                     onClick={handleRevokeLeave}
-                    disabled={!revokeReason.trim()}
+                    disabled={!revokeReason.trim() || revokeReason.trim().length < 10}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Revoke Leave
@@ -1020,10 +1284,10 @@ export default function LeaveManagementPage() {
                       maxLength={500}
                     />
                     <div className="text-xs text-gray-600 mt-1">
-                      {modifyData.reason.length}/500 characters
+                      {modifyData.reason.length}/500 characters (minimum 10 characters)
                     </div>
                   </div>
-                  
+
                   {/* Calculate new total days */}
                   {modifyData.fromDate && modifyData.toDate && (
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
