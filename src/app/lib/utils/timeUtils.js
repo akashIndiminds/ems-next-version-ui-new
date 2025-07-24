@@ -301,12 +301,48 @@ export const timeUtils = {
   },
 
   /**
-   * Calculate working hours between two UTC times
+   * Calculate working hours between two UTC times - IMPROVED VERSION
    * @param {string} checkInUTC - Check-in time in UTC
    * @param {string} checkOutUTC - Check-out time in UTC
-   * @returns {number} Working hours (rounded to 2 decimal places)
+   * @returns {string} Working hours in "Xh Ym" format (e.g., "1h 43m")
    */
   calculateWorkingHours: (checkInUTC, checkOutUTC) => {
+    if (!checkInUTC || !checkOutUTC) return '0h 0m';
+
+    try {
+      const checkInDate = new Date(checkInUTC);
+      const checkOutDate = new Date(checkOutUTC);
+
+      if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+        return '0h 0m';
+      }
+
+      const diffInMs = checkOutDate - checkInDate;
+      
+      // Calculate hours and minutes
+      const totalMinutes = Math.floor(diffInMs / (1000 * 60));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      // Return in readable format
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      } else {
+        return `${minutes}m`;
+      }
+    } catch (error) {
+      console.error('Error calculating working hours:', error);
+      return '0h 0m';
+    }
+  },
+
+  /**
+   * Calculate working hours as decimal (for backend/calculations)
+   * @param {string} checkInUTC - Check-in time in UTC
+   * @param {string} checkOutUTC - Check-out time in UTC
+   * @returns {number} Working hours as decimal (e.g., 1.72)
+   */
+  calculateWorkingHoursDecimal: (checkInUTC, checkOutUTC) => {
     if (!checkInUTC || !checkOutUTC) return 0;
 
     try {
@@ -325,6 +361,35 @@ export const timeUtils = {
       console.error('Error calculating working hours:', error);
       return 0;
     }
+  },
+
+  /**
+   * Format working hours for display (handles both decimal and h:m format)
+   * @param {string|number} workingHours - Working hours (could be decimal like 1.72 or string like "1h 43m")
+   * @returns {string} Formatted working hours
+   */
+  formatWorkingHours: (workingHours) => {
+    if (!workingHours || workingHours === 0) return '0h 0m';
+
+    // If it's already in "Xh Ym" format, return as is
+    if (typeof workingHours === 'string' && workingHours.includes('h')) {
+      return workingHours;
+    }
+
+    // If it's a decimal number, convert to h:m format
+    if (typeof workingHours === 'number' || !isNaN(parseFloat(workingHours))) {
+      const decimalHours = parseFloat(workingHours);
+      const hours = Math.floor(decimalHours);
+      const minutes = Math.round((decimalHours - hours) * 60);
+
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      } else {
+        return `${minutes}m`;
+      }
+    }
+
+    return '0h 0m';
   },
 
   /**

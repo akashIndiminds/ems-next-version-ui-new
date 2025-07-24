@@ -2,8 +2,8 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/context/AuthContext';
-import { Toaster } from 'react-hot-toast';
 import RouteLoadingProvider from '@/components/providers/RouteLoadingProvider';
+import ClientToaster from '@/components/ui/ClientToaster';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,26 +19,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <RouteLoadingProvider>
             {children}
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-                success: {
-                  style: {
-                    background: '#10B981',
-                  },
-                },
-                error: {
-                  style: {
-                    background: '#EF4444',
-                  },
-                },
-              }}
-            />
+            <ClientToaster />
           </RouteLoadingProvider>
         </AuthProvider>
       </body>
