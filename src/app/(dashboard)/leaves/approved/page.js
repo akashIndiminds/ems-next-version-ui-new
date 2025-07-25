@@ -5,19 +5,49 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { leaveAPI} from '@/app/lib/api/leaveAPI';
 import { dropdownAPI } from '@/app/lib/api';
-import { 
-  FiArrowLeft, FiSearch, FiFilter, FiCalendar, FiUser, 
-  FiEdit3, FiX, FiClock, FiCheckCircle, FiAlertTriangle,
-  FiEye, FiRefreshCw, FiCheck, FiXCircle, FiDownload,
-  FiHistory,
-  FiHardDrive
-} from 'react-icons/fi';
-import { format, parseISO, isAfter, isBefore, differenceInHours } from 'date-fns';
+import { format, parseISO, differenceInHours } from 'date-fns';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-export default function LeaveManagementPage() {
+// Mobile Components
+import { MobileLeaveManagementHeader } from '@/components/leaveApproveComponent/mobile/MobileLeaveManagementHeader';
+import { MobileLeaveManagementFilters } from '@/components/leaveApproveComponent/mobile/MobileLeaveManagementFilters';
+import { MobileLeaveManagementTabs } from '@/components/leaveApproveComponent/mobile/MobileLeaveManagementTabs';
+import { MobileLeaveManagementContent } from '@/components/leaveApproveComponent/mobile/MobileLeaveManagementContent';
+
+// Desktop Components
+import { DesktopLeaveManagementHeader } from '@/components/leaveApproveComponent/desktop/DesktopLeaveManagementHeader';
+import { DesktopLeaveManagementTabs } from '@/components/leaveApproveComponent/desktop/DesktopLeaveManagementTabs';
+import { DesktopLeaveManagementFilters } from '@/components/leaveApproveComponent/desktop/DesktopLeaveManagementFilters';
+import { DesktopLeaveManagementContent } from '@/components/leaveApproveComponent/desktop/DesktopLeaveManagementContent';
+
+// Modal Components
+import { LeaveViewModal } from '@/components/leaveApproveComponent/modals/LeaveViewModal';
+import { LeaveHistoryModal } from '@/components/leaveApproveComponent/modals/LeaveHistoryModal';
+import { LeaveRevokeModal } from '@/components/leaveApproveComponent/modals/LeaveRevokeModal';
+import { LeaveModifyModal } from '@/components/leaveApproveComponent/modals/LeaveModifyModal';
+
+// Hook for responsive design
+function useResponsive() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return { isMobile };
+}
+
+export default function ResponsiveLeaveManagementPage() {
   const { user } = useAuth();
+  const { isMobile } = useResponsive();
   
   // Separate state for approved and pending leaves to avoid resetting
   const [approvedLeaves, setApprovedLeaves] = useState([]);
@@ -63,6 +93,12 @@ export default function LeaveManagementPage() {
     reason: ''
   });
 
+  // Modal loading states
+  const [modalLoadingStates, setModalLoadingStates] = useState({
+    revoke: false,
+    modify: false
+  });
+
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
   const canManageLeaves = user?.role === 'admin' || user?.role === 'manager';
@@ -70,41 +106,8 @@ export default function LeaveManagementPage() {
   // Get current pagination based on active tab
   const currentPagination = paginationStates[activeTab];
 
-  // NEW: Check if leave can be modified/revoked (12-hour rule)
-  const canModifyOrRevokeLeave = (leave) => {
-    if (!isAdmin && user?.role !== 'manager') return false;
-    if (leave.IsRevoked) return false;
-    
-    const now = new Date();
-    const leaveStartDate = parseISO(leave.FromDate);
-    const hoursDifference = differenceInHours(leaveStartDate, now);
-    
-    return hoursDifference >= 12; // At least 12 hours before leave starts
-  };
-
-  // NEW: Check if leave can be revoked (only admin, 12-hour rule)
-  const canRevokeLeave = (leave) => {
-    if (!isAdmin) return false;
-    if (leave.IsRevoked) return false;
-    
-    const now = new Date();
-    const leaveStartDate = parseISO(leave.FromDate);
-    const hoursDifference = differenceInHours(leaveStartDate, now);
-    
-    return hoursDifference >= 12; // At least 12 hours before leave starts
-  };
-
-  // NEW: Check if leave can be modified (admin/manager, 12-hour rule)
-  const canModifyLeave = (leave) => {
-    if (!canManageLeaves) return false;
-    if (leave.IsRevoked) return false;
-    
-    const now = new Date();
-    const leaveStartDate = parseISO(leave.FromDate);
-    const hoursDifference = differenceInHours(leaveStartDate, now);
-    
-    return hoursDifference >= 12; // At least 12 hours before leave starts
-  };
+  // Check if filters are active
+  const hasActiveFilters = searchTerm || selectedDepartment || dateRange.from || dateRange.to;
 
   // Fetch pending leaves
   const fetchPendingLeaves = useCallback(async (params = {}) => {
@@ -163,9 +166,6 @@ export default function LeaveManagementPage() {
         ...params
       };
 
-      console.log('Fetching approved leaves with correct params:', searchParams);
-      
-      // FIXED: Pass params correctly without nesting
       const response = await leaveAPI.getApprovedLeaves(searchParams);
       
       if (response.data.success) {
@@ -175,10 +175,6 @@ export default function LeaveManagementPage() {
           approved: { ...prev.approved, total: response.data.total || 0 }
         }));
         setDataFetched(prev => ({ ...prev, approved: true }));
-        
-        if (response.data.debug) {
-          console.log('Debug info:', response.data.debug);
-        }
       } else {
         console.error('Failed to fetch approved leaves:', response.data);
         setApprovedLeaves([]);
@@ -205,7 +201,7 @@ export default function LeaveManagementPage() {
     }
   }, []);
 
-  // NEW: Fetch leave history
+  // Fetch leave history
   const fetchLeaveHistory = async (leaveId) => {
     try {
       const response = await leaveAPI.getLeaveHistory(leaveId);
@@ -226,11 +222,10 @@ export default function LeaveManagementPage() {
   useEffect(() => {
     if (canManageLeaves) {
       fetchDepartments();
-      // Fetch both pending and approved data initially
       fetchPendingLeaves();
       fetchApprovedLeaves();
     }
-  }, [canManageLeaves]); // Only depend on canManageLeaves for initial fetch
+  }, [canManageLeaves]);
 
   // Handle filter/search changes - refetch data when filters change
   useEffect(() => {
@@ -248,7 +243,7 @@ export default function LeaveManagementPage() {
         fetchApprovedLeaves();
       }
     }
-  }, [searchTerm, selectedDepartment, dateRange.from, dateRange.to]); // Only refetch when actual filters change
+  }, [searchTerm, selectedDepartment, dateRange.from, dateRange.to]);
 
   // Handle pagination changes
   useEffect(() => {
@@ -259,9 +254,9 @@ export default function LeaveManagementPage() {
         fetchApprovedLeaves();
       }
     }
-  }, [paginationStates.pending.page, paginationStates.approved.page]); // Only refetch when pagination changes
+  }, [paginationStates.pending.page, paginationStates.approved.page]);
 
-  // Manual refresh function
+  // Event Handlers
   const handleRefresh = () => {
     if (activeTab === 'pending') {
       fetchPendingLeaves();
@@ -270,11 +265,9 @@ export default function LeaveManagementPage() {
     }
   };
 
-  // Tab switching - no need to refetch if data already exists
   const handleTabSwitch = (tab) => {
     setActiveTab(tab);
     
-    // Only fetch data if it hasn't been fetched yet or if we want to refresh
     if (tab === 'pending' && !dataFetched.pending) {
       fetchPendingLeaves();
     } else if (tab === 'approved' && !dataFetched.approved) {
@@ -282,7 +275,6 @@ export default function LeaveManagementPage() {
     }
   };
 
-  // Update pagination for specific tab
   const updatePagination = (tab, updates) => {
     setPaginationStates(prev => ({
       ...prev,
@@ -303,7 +295,6 @@ export default function LeaveManagementPage() {
       });
       if (response.data.success) {
         toast.success(`Leave ${status.toLowerCase()} successfully`);
-        // Refresh both tabs since status change affects both
         fetchPendingLeaves();
         fetchApprovedLeaves();
       } else {
@@ -315,7 +306,6 @@ export default function LeaveManagementPage() {
     }
   };
 
-  // NEW: Handle leave modification
   const handleModifyLeave = async () => {
     if (!selectedLeave || !modifyData.fromDate || !modifyData.toDate || !modifyData.reason.trim()) {
       toast.error('Please fill in all required fields');
@@ -336,7 +326,6 @@ export default function LeaveManagementPage() {
       return;
     }
 
-    // Check 12-hour rule
     const hoursDifference = differenceInHours(fromDate, now);
     if (hoursDifference < 12) {
       toast.error('Leave can only be modified at least 12 hours before the start date');
@@ -349,6 +338,7 @@ export default function LeaveManagementPage() {
     }
 
     try {
+      setModalLoadingStates(prev => ({ ...prev, modify: true }));
       const response = await leaveAPI.modifyApprovedLeave(selectedLeave.LeaveApplicationID, {
         fromDate: modifyData.fromDate,
         toDate: modifyData.toDate,
@@ -360,17 +350,18 @@ export default function LeaveManagementPage() {
         setShowModifyModal(false);
         setSelectedLeave(null);
         setModifyData({ fromDate: '', toDate: '', reason: '' });
-        fetchApprovedLeaves(); // Refresh approved leaves
+        fetchApprovedLeaves();
       } else {
         toast.error(response.data.message || 'Failed to modify leave');
       }
     } catch (error) {
       console.error('Error modifying leave:', error);
       toast.error(error.response?.data?.message || 'Failed to modify leave');
+    } finally {
+      setModalLoadingStates(prev => ({ ...prev, modify: false }));
     }
   };
 
-  // NEW: Handle leave revocation
   const handleRevokeLeave = async () => {
     if (!selectedLeave || !revokeReason.trim()) {
       toast.error('Please provide a reason for revocation');
@@ -382,7 +373,6 @@ export default function LeaveManagementPage() {
       return;
     }
 
-    // Check 12-hour rule
     const now = new Date();
     const leaveStartDate = parseISO(selectedLeave.FromDate);
     const hoursDifference = differenceInHours(leaveStartDate, now);
@@ -399,6 +389,7 @@ export default function LeaveManagementPage() {
     }
 
     try {
+      setModalLoadingStates(prev => ({ ...prev, revoke: true }));
       const response = await leaveAPI.revokeApprovedLeave(selectedLeave.LeaveApplicationID, {
         reason: revokeReason.trim()
       });
@@ -408,13 +399,15 @@ export default function LeaveManagementPage() {
         setShowRevokeModal(false);
         setSelectedLeave(null);
         setRevokeReason('');
-        fetchApprovedLeaves(); // Refresh approved leaves
+        fetchApprovedLeaves();
       } else {
         toast.error(response.data.message || 'Failed to revoke leave');
       }
     } catch (error) {
       console.error('Error revoking leave:', error);
       toast.error(error.response?.data?.message || 'Failed to revoke leave');
+    } finally {
+      setModalLoadingStates(prev => ({ ...prev, revoke: false }));
     }
   };
 
@@ -446,54 +439,6 @@ export default function LeaveManagementPage() {
     }
   };
 
-  const getLeaveStatusBadge = (leave) => {
-    if (activeTab === 'pending') {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-          <FiClock className="mr-1 h-3 w-3" />
-          Pending
-        </span>
-      );
-    }
-
-    // Check if leave is revoked
-    if (leave.IsRevoked) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <FiXCircle className="mr-1 h-3 w-3" />
-          Revoked
-        </span>
-      );
-    }
-
-    const today = new Date();
-    const fromDate = parseISO(leave.FromDate);
-    const toDate = parseISO(leave.ToDate);
-
-    if (isBefore(toDate, today)) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          <FiCheckCircle className="mr-1 h-3 w-3" />
-          Completed
-        </span>
-      );
-    } else if (isAfter(fromDate, today)) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          <FiClock className="mr-1 h-3 w-3" />
-          Upcoming
-        </span>
-      );
-    } else {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <FiAlertTriangle className="mr-1 h-3 w-3" />
-          Ongoing
-        </span>
-      );
-    }
-  };
-
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedDepartment('');
@@ -504,23 +449,42 @@ export default function LeaveManagementPage() {
     });
   };
 
-  // NEW: Get time remaining before 12-hour deadline
-  const getTimeRemainingInfo = (leave) => {
-    const now = new Date();
-    const leaveStartDate = parseISO(leave.FromDate);
-    const hoursDifference = differenceInHours(leaveStartDate, now);
-    
-    if (hoursDifference < 12) {
-      return {
-        canModify: false,
-        message: `Cannot modify/revoke (less than 12 hours remaining)`
-      };
-    }
-    
-    return {
-      canModify: true,
-      message: `${Math.floor(hoursDifference)} hours remaining to modify/revoke`
-    };
+  // Modal Handlers
+  const handleViewLeave = (leave) => {
+    setSelectedLeave(leave);
+    setShowViewModal(true);
+  };
+
+  const handleViewHistory = async (leave) => {
+    setSelectedLeave(leave);
+    await fetchLeaveHistory(leave.LeaveApplicationID);
+    setShowHistoryModal(true);
+  };
+
+  const handleModifyClick = (leave) => {
+    setSelectedLeave(leave);
+    setModifyData({
+      fromDate: leave.FromDate.split('T')[0],
+      toDate: leave.ToDate.split('T')[0],
+      reason: ''
+    });
+    setShowModifyModal(true);
+  };
+
+  const handleRevokeClick = (leave) => {
+    setSelectedLeave(leave);
+    setShowRevokeModal(true);
+  };
+
+  const closeAllModals = () => {
+    setShowViewModal(false);
+    setShowHistoryModal(false);
+    setShowModifyModal(false);
+    setShowRevokeModal(false);
+    setSelectedLeave(null);
+    setRevokeReason('');
+    setModifyData({ fromDate: '', toDate: '', reason: '' });
+    setLeaveHistory([]);
   };
 
   // Redirect if user doesn't have permission
@@ -552,778 +516,140 @@ export default function LeaveManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-6 space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/leaves" 
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <FiArrowLeft className="mr-2 h-5 w-5" />
-              Back to Leaves
-            </Link>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Leave Management
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Manage pending approvals and approved leave requests
-              </p>
-            </div>
-          </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={handleExportData}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <FiDownload className="mr-2 h-4 w-4" />
-              Export
-            </button>
-            <button
-              onClick={handleRefresh}
-              disabled={isCurrentTabLoading}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              <FiRefreshCw className={`mr-2 h-4 w-4 ${isCurrentTabLoading ? 'animate-spin' : ''}`} />
-              {isCurrentTabLoading ? 'Loading...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
-              <button
-                onClick={() => handleTabSwitch('pending')}
-                className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
-                  activeTab === 'pending'
-                    ? 'border-amber-500 text-amber-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <FiClock className="inline mr-2" />
-                Pending Approvals ({pendingLeaves.length})
-              </button>
-              <button
-                onClick={() => handleTabSwitch('approved')}
-                className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 ${
-                  activeTab === 'approved'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <FiCheckCircle className="inline mr-2" />
-                Approved Leaves ({approvedLeaves.length})
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Filters & Search</h3>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <FiFilter className="mr-2 h-4 w-4" />
-                {showFilters ? 'Hide' : 'Show'} Filters
-              </button>
-            </div>
-          </div>
-
-          <div className="p-4 space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by employee name or code..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-              />
-            </div>
-
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <select
-                    value={selectedDepartment}
-                    onChange={(e) => setSelectedDepartment(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  >
-                    <option value="">All Departments</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    From Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.from}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    To Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.to}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Filter Actions */}
-            {(searchTerm || selectedDepartment || dateRange.from || dateRange.to) && (
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={resetFilters}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Leaves Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className={`p-6 border-b border-gray-200 ${
-            activeTab === 'pending' 
-              ? 'bg-gradient-to-r from-amber-50 to-orange-50' 
-              : 'bg-gradient-to-r from-green-50 to-blue-50'
-          }`}>
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              {activeTab === 'pending' ? (
-                <>
-                  <FiClock className="mr-3 text-amber-600" />
-                  Pending Approvals ({currentPagination.total})
-                  {isCurrentTabLoading && <div className="ml-3 animate-spin rounded-full h-4 w-4 border-2 border-amber-600 border-t-transparent"></div>}
-                </>
-              ) : (
-                <>
-                  <FiCheckCircle className="mr-3 text-green-600" />
-                  Approved Leaves ({currentPagination.total})
-                  {isCurrentTabLoading && <div className="ml-3 animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent"></div>}
-                </>
-              )}
-            </h2>
-          </div>
+      {isMobile ? (
+        // Mobile Layout
+        <div className="bg-gray-50 min-h-screen">
+          <MobileLeaveManagementHeader
+            onRefresh={handleRefresh}
+            onExport={handleExportData}
+            isLoading={isCurrentTabLoading}
+            activeTab={activeTab}
+            pendingCount={pendingLeaves.length}
+            approvedCount={approvedLeaves.length}
+          />
           
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Employee
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Leave Type
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Dates
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Days
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Status
-                  </th>
-                  {activeTab === 'approved' && (
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Approved By
-                    </th>
-                  )}
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentData.map((leave, index) => {
-                  const timeInfo = activeTab === 'approved' ? getTimeRemainingInfo(leave) : null;
-                  
-                  return (
-                    <tr key={leave.LeaveApplicationID} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <FiUser className="h-5 w-5 text-blue-600" />
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{leave.EmployeeName}</div>
-                            <div className="text-sm text-gray-500">{leave.EmployeeCode}</div>
-                            <div className="text-xs text-gray-500">{leave.DepartmentName}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {leave.LeaveTypeName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        <div>
-                          <div className="font-medium">
-                            {format(parseISO(leave.FromDate), 'MMM d, yyyy')}
-                          </div>
-                          <div className="text-xs text-gray-500">to</div>
-                          <div className="font-medium">
-                            {format(parseISO(leave.ToDate), 'MMM d, yyyy')}
-                          </div>
-                          {/* NEW: Show modification/revocation deadline info */}
-                          {activeTab === 'approved' && !leave.IsRevoked && timeInfo && (
-                            <div className={`text-xs mt-1 ${timeInfo.canModify ? 'text-green-600' : 'text-red-600'}`}>
-                              {timeInfo.message}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {leave.TotalDays} {leave.TotalDays === 1 ? 'day' : 'days'}
-                        {/* NEW: Show modification indicator */}
-                        {leave.ModifiedDate && (
-                          <div className="text-xs text-blue-600 mt-1">
-                            Modified
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getLeaveStatusBadge(leave)}
-                      </td>
-                      {activeTab === 'approved' && (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          <div>
-                            <div className="font-medium">{leave.ApproverName || 'System'}</div>
-                            <div className="text-xs text-gray-500">
-                              {leave.ApprovedDate ? format(parseISO(leave.ApprovedDate), 'MMM d, yyyy') : '-'}
-                            </div>
-                            {/* NEW: Show modifier/revoker info */}
-                            {leave.ModifiedDate && (
-                              <div className="text-xs text-blue-600 mt-1">
-                                Modified by {leave.ModifierName}
-                              </div>
-                            )}
-                            {leave.IsRevoked && (
-                              <div className="text-xs text-red-600 mt-1">
-                                Revoked by {leave.RevokerName}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => {
-                              setSelectedLeave(leave);
-                              setShowViewModal(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
-                            title="View Details"
-                          >
-                            <FiEye className="h-4 w-4" />
-                          </button>
-                          
-                          {/* NEW: History button for approved leaves */}
-                          {activeTab === 'approved' && canManageLeaves && (
-                            <button
-                              onClick={async () => {
-                                setSelectedLeave(leave);
-                                await fetchLeaveHistory(leave.LeaveApplicationID);
-                                setShowHistoryModal(true);
-                              }}
-                              className="text-purple-600 hover:text-purple-800 p-1 rounded hover:bg-purple-50 transition-colors"
-                              title="View History"
-                            >
-                              <FiHardDrive className="h-4 w-4" />
-                            </button>
-                          )}
-                          
-                          {activeTab === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Approved')}
-                                className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50 transition-colors"
-                                title="Approve"
-                              >
-                                <FiCheck className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(leave.LeaveApplicationID, 'Rejected')}
-                                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                                title="Reject"
-                              >
-                                <FiX className="h-4 w-4" />
-                              </button>
-                            </>
-                          )}
-                          
-                          {/* NEW: Updated modify/revoke buttons with 12-hour rule */}
-                          {activeTab === 'approved' && canModifyLeave(leave) && (
-                            <button
-                              onClick={() => {
-                                setSelectedLeave(leave);
-                                setModifyData({
-                                  fromDate: leave.FromDate.split('T')[0],
-                                  toDate: leave.ToDate.split('T')[0],
-                                  reason: ''
-                                });
-                                setShowModifyModal(true);
-                              }}
-                              className="text-amber-600 hover:text-amber-800 p-1 rounded hover:bg-amber-50 transition-colors"
-                              title="Modify Dates"
-                            >
-                              <FiEdit3 className="h-4 w-4" />
-                            </button>
-                          )}
-                          
-                          {activeTab === 'approved' && canRevokeLeave(leave) && (
-                            <button
-                              onClick={() => {
-                                setSelectedLeave(leave);
-                                setShowRevokeModal(true);
-                              }}
-                              className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                              title="Revoke Leave"
-                            >
-                              <FiXCircle className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {currentData.length === 0 && !isCurrentTabLoading && (
-                  <tr>
-                    <td colSpan={activeTab === 'approved' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
-                      {activeTab === 'pending' 
-                        ? 'No pending leave applications'
-                        : 'No approved leaves found'
-                      }
-                    </td>
-                  </tr>
-                )}
-                {isCurrentTabLoading && (
-                  <tr>
-                    <td colSpan={activeTab === 'approved' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent mr-3"></div>
-                        Loading {activeTab} leaves...
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {currentPagination.total > currentPagination.limit && (
-            <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {((currentPagination.page - 1) * currentPagination.limit) + 1} to{' '}
-                {Math.min(currentPagination.page * currentPagination.limit, currentPagination.total)} of{' '}
-                {currentPagination.total} results
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => updatePagination(activeTab, { page: currentPagination.page - 1 })}
-                  disabled={currentPagination.page === 1 || isCurrentTabLoading}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-sm">
-                  {currentPagination.page}
-                </span>
-                <button
-                  onClick={() => updatePagination(activeTab, { page: currentPagination.page + 1 })}
-                  disabled={currentPagination.page * currentPagination.limit >= currentPagination.total || isCurrentTabLoading}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
+          <MobileLeaveManagementFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            departments={departments}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            resetFilters={resetFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+          
+          <MobileLeaveManagementTabs
+            activeTab={activeTab}
+            onTabChange={handleTabSwitch}
+            pendingCount={paginationStates.pending.total}
+            approvedCount={paginationStates.approved.total}
+            isLoading={isCurrentTabLoading}
+          />
+          
+          <MobileLeaveManagementContent
+            currentData={currentData}
+            activeTab={activeTab}
+            isLoading={isCurrentTabLoading}
+            currentPagination={currentPagination}
+            onUpdatePagination={updatePagination}
+            onView={handleViewLeave}
+            onApprove={(id) => handleUpdateStatus(id, 'Approved')}
+            onReject={(id) => handleUpdateStatus(id, 'Rejected')}
+            onModify={handleModifyClick}
+            onRevoke={handleRevokeClick}
+            onViewHistory={handleViewHistory}
+            canManageLeaves={canManageLeaves}
+            isAdmin={isAdmin}
+            currentUser={user}
+          />
         </div>
+      ) : (
+        // Desktop Layout
+        <div className="p-6 space-y-8">
+          <DesktopLeaveManagementHeader
+            onRefresh={handleRefresh}
+            onExport={handleExportData}
+            isLoading={isCurrentTabLoading}
+          />
 
-        {/* View Modal */}
-        {showViewModal && selectedLeave && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen px-4">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowViewModal(false)}></div>
-              
-              <div className="relative bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Leave Details</h3>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Employee Information</h4>
-                    <div className="space-y-2">
-                      <p><span className="font-medium text-gray-900">Name:</span> <span className="text-gray-800">{selectedLeave.EmployeeName}</span></p>
-                      <p><span className="font-medium text-gray-900">Code:</span> <span className="text-gray-800">{selectedLeave.EmployeeCode}</span></p>
-                      <p><span className="font-medium text-gray-900">Department:</span> <span className="text-gray-800">{selectedLeave.DepartmentName}</span></p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Leave Information</h4>
-                    <div className="space-y-2">
-                      <p><span className="font-medium text-gray-900">Type:</span> <span className="text-gray-800">{selectedLeave.LeaveTypeName}</span></p>
-                      <p><span className="font-medium text-gray-900">From:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')}</span></p>
-                      <p><span className="font-medium text-gray-900">To:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}</span></p>
-                      <p><span className="font-medium text-gray-900">Total Days:</span> <span className="text-gray-800">{selectedLeave.TotalDays}</span></p>
-                      {selectedLeave.ApproverName && (
-                        <p><span className="font-medium text-gray-900">Approved By:</span> <span className="text-gray-800">{selectedLeave.ApproverName}</span></p>
-                      )}
-                      {/* NEW: Show modification/revocation info */}
-                      {selectedLeave.ModifiedDate && (
-                        <>
-                          <p><span className="font-medium text-gray-900">Modified By:</span> <span className="text-gray-800">{selectedLeave.ModifierName}</span></p>
-                          <p><span className="font-medium text-gray-900">Modified Date:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.ModifiedDate), 'MMM d, yyyy')}</span></p>
-                        </>
-                      )}
-                      {selectedLeave.IsRevoked && (
-                        <>
-                          <p><span className="font-medium text-gray-900">Revoked By:</span> <span className="text-gray-800">{selectedLeave.RevokerName}</span></p>
-                          <p><span className="font-medium text-gray-900">Revoked Date:</span> <span className="text-gray-800">{format(parseISO(selectedLeave.RevokedDate), 'MMM d, yyyy')}</span></p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {selectedLeave.Reason && (
-                  <div className="mt-6">
-                    <h4 className="font-semibold text-gray-900 mb-2">Reason</h4>
-                    <p className="text-gray-800 bg-gray-50 p-3 rounded-lg border">{selectedLeave.Reason}</p>
-                  </div>
-                )}
+          <DesktopLeaveManagementTabs
+            activeTab={activeTab}
+            onTabChange={handleTabSwitch}
+            pendingCount={paginationStates.pending.total}
+            approvedCount={paginationStates.approved.total}
+            isLoading={isCurrentTabLoading}
+          />
 
-                {/* NEW: Show modification/revocation reasons */}
-                {selectedLeave.ModificationReason && (
-                  <div className="mt-6">
-                    <h4 className="font-semibold text-gray-900 mb-2">Modification Reason</h4>
-                    <p className="text-gray-800 bg-blue-50 p-3 rounded-lg border border-blue-200">{selectedLeave.ModificationReason}</p>
-                  </div>
-                )}
+          <DesktopLeaveManagementFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            departments={departments}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            resetFilters={resetFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
 
-                {selectedLeave.RevocationReason && (
-                  <div className="mt-6">
-                    <h4 className="font-semibold text-gray-900 mb-2">Revocation Reason</h4>
-                    <p className="text-gray-800 bg-red-50 p-3 rounded-lg border border-red-200">{selectedLeave.RevocationReason}</p>
-                  </div>
-                )}
-                
-                <div className="flex justify-end mt-6">
-                  <button
-                    onClick={() => setShowViewModal(false)}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          <DesktopLeaveManagementContent
+            currentData={currentData}
+            activeTab={activeTab}
+            isLoading={isCurrentTabLoading}
+            currentPagination={currentPagination}
+            onUpdatePagination={updatePagination}
+            onView={handleViewLeave}
+            onApprove={(id) => handleUpdateStatus(id, 'Approved')}
+            onReject={(id) => handleUpdateStatus(id, 'Rejected')}
+            onModify={handleModifyClick}
+            onRevoke={handleRevokeClick}
+            onViewHistory={handleViewHistory}
+            canManageLeaves={canManageLeaves}
+            isAdmin={isAdmin}
+            currentUser={user}
+          />
+        </div>
+      )}
 
-        {/* NEW: History Modal */}
-        {showHistoryModal && selectedLeave && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen px-4">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowHistoryModal(false)}></div>
-              
-              <div className="relative bg-white rounded-xl max-w-4xl w-full p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Leave Modification History</h3>
-                  <p className="text-gray-600 mt-1">
-                    {selectedLeave.EmployeeName} - {selectedLeave.LeaveTypeName}
-                  </p>
-                </div>
-                
-                {leaveHistory.length > 0 ? (
-                  <div className="space-y-4">
-                    {leaveHistory.map((history, index) => (
-                      <div key={history.HistoryID} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold text-gray-900">{history.ModificationType}</span>
-                          <span className="text-sm text-gray-500">
-                            {format(parseISO(history.ModifiedDate), 'MMM d, yyyy HH:mm')}
-                          </span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          {history.ModificationType === 'DateChange' && (
-                            <>
-                              <div>
-                                <span className="font-medium text-gray-700">Old Dates:</span>
-                                <div className="text-gray-600">
-                                  {history.OldFromDate ? format(parseISO(history.OldFromDate), 'MMM d, yyyy') : '-'} to{' '}
-                                  {history.OldToDate ? format(parseISO(history.OldToDate), 'MMM d, yyyy') : '-'}
-                                </div>
-                                <div className="text-gray-600">
-                                  Days: {history.OldTotalDays || '-'}
-                                </div>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">New Dates:</span>
-                                <div className="text-gray-600">
-                                  {history.NewFromDate ? format(parseISO(history.NewFromDate), 'MMM d, yyyy') : '-'} to{' '}
-                                  {history.NewToDate ? format(parseISO(history.NewToDate), 'MMM d, yyyy') : '-'}
-                                </div>
-                                <div className="text-gray-600">
-                                  Days: {history.NewTotalDays || '-'}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                          
-                          {history.ModificationType === 'StatusChange' && (
-                            <>
-                              <div>
-                                <span className="font-medium text-gray-700">Old Status:</span>
-                                <div className="text-gray-600">{history.OldStatus || '-'}</div>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">New Status:</span>
-                                <div className="text-gray-600">{history.NewStatus || '-'}</div>
-                              </div>
-                            </>
-                          )}
-                          
-                          {history.ModificationType === 'Revocation' && (
-                            <div className="col-span-2">
-                              <span className="font-medium text-gray-700">Leave Revoked</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="mt-2">
-                          <span className="font-medium text-gray-700">Modified By:</span>
-                          <span className="text-gray-600 ml-2">{history.ModifierName}</span>
-                        </div>
-                        
-                        {history.Reason && (
-                          <div className="mt-2">
-                            <span className="font-medium text-gray-700">Reason:</span>
-                            <div className="text-gray-600 mt-1 bg-gray-50 p-2 rounded border">
-                              {history.Reason}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No modification history found for this leave.
-                  </div>
-                )}
-                
-                <div className="flex justify-end mt-6">
-                  <button
-                    onClick={() => setShowHistoryModal(false)}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Modals - Shared between mobile and desktop */}
+      <LeaveViewModal
+        isOpen={showViewModal}
+        onClose={closeAllModals}
+        leave={selectedLeave}
+      />
 
-        {/* Revoke Modal */}
-        {showRevokeModal && selectedLeave && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen px-4">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowRevokeModal(false)}></div>
-              
-              <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Revoke Leave</h3>
-                  <p className="text-gray-700 mt-2">
-                    Are you sure you want to revoke this leave? This action will restore the employee's leave balance.
-                  </p>
-                </div>
-                
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="text-sm text-gray-800">
-                    <div className="font-semibold text-gray-900">{selectedLeave.EmployeeName}</div>
-                    <div className="text-gray-800 mt-1">{selectedLeave.LeaveTypeName}</div>
-                    <div className="text-gray-800 mt-1">
-                      {format(parseISO(selectedLeave.FromDate), 'MMM d, yyyy')} to {format(parseISO(selectedLeave.ToDate), 'MMM d, yyyy')}
-                    </div>
-                    <div className="text-gray-800 mt-1">
-                      {selectedLeave.TotalDays} {selectedLeave.TotalDays === 1 ? 'day' : 'days'}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Reason for Revocation <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={revokeReason}
-                    onChange={(e) => setRevokeReason(e.target.value)}
-                    rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900"
-                    placeholder="Please provide a reason for revoking this leave..."
-                    maxLength={500}
-                  />
-                  <div className="text-xs text-gray-600 mt-1">
-                    {revokeReason.length}/500 characters (minimum 10 characters)
-                  </div>
-                </div>
-                
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => {
-                      setShowRevokeModal(false);
-                      setRevokeReason('');
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleRevokeLeave}
-                    disabled={!revokeReason.trim() || revokeReason.trim().length < 10}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Revoke Leave
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      <LeaveHistoryModal
+        isOpen={showHistoryModal}
+        onClose={closeAllModals}
+        leave={selectedLeave}
+        leaveHistory={leaveHistory}
+      />
 
-        {/* Modify Modal */}
-        {showModifyModal && selectedLeave && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen px-4">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowModifyModal(false)}></div>
-              
-              <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Modify Leave Dates</h3>
-                  <p className="text-gray-700 mt-2">
-                    Update the leave dates for <span className="font-medium text-gray-900">{selectedLeave.EmployeeName}</span>
-                  </p>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">
-                        From Date <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={modifyData.fromDate}
-                        onChange={(e) => setModifyData(prev => ({ ...prev, fromDate: e.target.value }))}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black text-gray-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">
-                        To Date <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={modifyData.toDate}
-                        onChange={(e) => setModifyData(prev => ({ ...prev, toDate: e.target.value }))}
-                        min={modifyData.fromDate || new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black text-gray-900"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">
-                      Reason for Modification <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={modifyData.reason}
-                      onChange={(e) => setModifyData(prev => ({ ...prev, reason: e.target.value }))}
-                      rows="3"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black text-gray-900"
-                      placeholder="Please provide a reason for modifying the dates..."
-                      maxLength={500}
-                    />
-                    <div className="text-xs text-gray-600 mt-1">
-                      {modifyData.reason.length}/500 characters (minimum 10 characters)
-                    </div>
-                  </div>
+      <LeaveRevokeModal
+        isOpen={showRevokeModal}
+        onClose={closeAllModals}
+        leave={selectedLeave}
+        revokeReason={revokeReason}
+        setRevokeReason={setRevokeReason}
+        onRevoke={handleRevokeLeave}
+        isLoading={modalLoadingStates.revoke}
+      />
 
-                  {/* Calculate new total days */}
-                  {modifyData.fromDate && modifyData.toDate && (
-                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="text-sm text-blue-900">
-                        <div className="font-medium">New Duration: <span className="font-semibold">{
-                          Math.ceil((new Date(modifyData.toDate) - new Date(modifyData.fromDate)) / (1000 * 60 * 60 * 24)) + 1
-                        } days</span></div>
-                        <div className="font-medium mt-1">Original Duration: <span className="font-semibold">{selectedLeave.TotalDays} days</span></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={() => {
-                      setShowModifyModal(false);
-                      setModifyData({ fromDate: '', toDate: '', reason: '' });
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleModifyLeave}
-                    disabled={!modifyData.fromDate || !modifyData.toDate || !modifyData.reason.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Modify Leave
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <LeaveModifyModal
+        isOpen={showModifyModal}
+        onClose={closeAllModals}
+        leave={selectedLeave}
+        modifyData={modifyData}
+        setModifyData={setModifyData}
+        onModify={handleModifyLeave}
+        isLoading={modalLoadingStates.modify}
+      />
     </div>
   );
-} 
+}
