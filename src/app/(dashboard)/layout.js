@@ -10,8 +10,9 @@ import {
   FiLogOut, FiMenu, FiX, FiBell, FiUser, FiChevronDown, FiBarChart
 } from 'react-icons/fi';
 import { MdBusiness, MdLocationOn } from 'react-icons/md';
+import MobileBottomNavigation from '@/components/MobileBottomNavigation';
 
-// Organized sidebar items with categories
+// Organized sidebar items with categories for desktop
 const sidebarItems = [
   // Main Dashboard
   { 
@@ -111,9 +112,21 @@ export default function DashboardLayout({ children }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [activeNavItem, setActiveNavItem] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const { user, logout, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -133,6 +146,11 @@ export default function DashboardLayout({ children }) {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   // Handle navigation with loading states
   const handleNavigation = async (href, itemName, event) => {
@@ -209,8 +227,8 @@ export default function DashboardLayout({ children }) {
 
   const isActive = (href) => pathname === href;
 
-  // Render navigation items with categories
-  const renderNavigation = (isMobile = false) => {
+  // Render navigation items with categories (Desktop only)
+  const renderDesktopNavigation = () => {
     return Object.entries(groupedItems).map(([category, items]) => (
       <div key={category} className={`${category === 'main' ? '' : 'mt-6'}`}>
         {category !== 'main' && (
@@ -234,7 +252,6 @@ export default function DashboardLayout({ children }) {
                 }
                 ${(navigating || activeNavItem === item.name) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 ${activeNavItem === item.name ? 'bg-gray-100' : ''}
-                ${isMobile ? 'py-3' : ''}
               `}
             >
               <item.icon className={`mr-3 h-4 w-4 flex-shrink-0 ${
@@ -265,22 +282,22 @@ export default function DashboardLayout({ children }) {
         </div>
       )}
 
-      {/* Sidebar for desktop */}
+      {/* Desktop Sidebar */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30">
-        <div className="flex-1 flex flex-col min-h-0 bg-white shadow-xl border-r border-gray-200">
+        <div className="flex flex-col min-h-0 bg-white shadow-xl border-r border-gray-200">
           {/* Logo */}
           <div className="flex items-center h-16 flex-shrink-0 px-6 bg-gradient-to-r from-blue-600 to-blue-700">
             <h1 className="text-xl font-bold text-white">AttendanceHub</h1>
           </div>
           
-          {/* Navigation */}
+          {/* Desktop Navigation */}
           <div className="flex-1 flex flex-col overflow-y-auto">
             <nav className="flex-1 px-3 py-4">
-              {renderNavigation()}
+              {renderDesktopNavigation()}
             </nav>
           </div>
           
-          {/* User info */}
+          {/* Desktop User info */}
           <div className="flex-shrink-0 flex bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-t border-gray-200">
             <div className="flex items-center w-full">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
@@ -295,45 +312,43 @@ export default function DashboardLayout({ children }) {
         </div>
       </div>
 
-      {/* Mobile sidebar */}
+      {/* Mobile sidebar backdrop and drawer */}
       {sidebarOpen && (
-        <div className="md:hidden">
-          <div className="fixed inset-0 flex z-40">
-            <div className="fixed inset-0" onClick={() => setSidebarOpen(false)}>
-              <div className="absolute inset-0 bg-gray-600 opacity-75"></div>
+        <div className="md:hidden fixed inset-0 flex z-40">
+          <div className="fixed inset-0" onClick={() => setSidebarOpen(false)}>
+            <div className="absolute inset-0 bg-gray-600 opacity-75"></div>
+          </div>
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl">
+            <div className="absolute top-0 right-0 -mr-12 pt-2">
+              <button
+                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <FiX className="h-6 w-6 text-white" />
+              </button>
             </div>
-            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl">
-              <div className="absolute top-0 right-0 -mr-12 pt-2">
-                <button
-                  className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <FiX className="h-6 w-6 text-white" />
-                </button>
-              </div>
-              
-              {/* Mobile Logo */}
-              <div className="flex-shrink-0 flex items-center px-6 h-16 bg-gradient-to-r from-blue-600 to-blue-700">
-                <h1 className="text-xl font-bold text-white">AttendanceHub</h1>
-              </div>
-              
-              {/* Mobile Navigation */}
-              <div className="flex-1 h-0 pt-4 pb-4 overflow-y-auto">
-                <nav className="px-3">
-                  {renderNavigation(true)}
-                </nav>
-              </div>
-              
-              {/* Mobile User info */}
-              <div className="flex-shrink-0 flex bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-t border-gray-200">
-                <div className="flex items-center w-full">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                    {user.fullName?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <p className="text-base font-semibold text-gray-900 truncate">{user.fullName}</p>
-                    <p className="text-sm font-medium text-gray-600 capitalize">{user.role}</p>
-                  </div>
+            
+            {/* Mobile Logo */}
+            <div className="flex-shrink-0 flex items-center px-6 h-16 bg-gradient-to-r from-blue-600 to-blue-700">
+              <h1 className="text-xl font-bold text-white">AttendanceHub</h1>
+            </div>
+            
+            {/* Mobile Navigation - Same as desktop but with mobile styling */}
+            <div className="flex-1 h-0 pt-4 pb-4 overflow-y-auto">
+              <nav className="px-3">
+                {renderDesktopNavigation()}
+              </nav>
+            </div>
+            
+            {/* Mobile User info */}
+            <div className="flex-shrink-0 flex bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-t border-gray-200">
+              <div className="flex items-center w-full">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
+                  {user.fullName?.charAt(0).toUpperCase()}
+                </div>
+                <div className="ml-3 flex-1 min-w-0">
+                  <p className="text-base font-semibold text-gray-900 truncate">{user.fullName}</p>
+                  <p className="text-sm font-medium text-gray-600 capitalize">{user.role}</p>
                 </div>
               </div>
             </div>
@@ -341,10 +356,11 @@ export default function DashboardLayout({ children }) {
         </div>
       )}
 
-      {/* Main content */}
-      <div className="md:pl-64 flex flex-col flex-1">
-        {/* Top header */}
+      {/* Main content wrapper - Mobile first with desktop adjustments */}
+      <div className="flex flex-col min-h-screen md:pl-64">
+        {/* Top header - Responsive design */}
         <div className="sticky top-0 z-20 flex-shrink-0 flex h-16 bg-white shadow-lg border-b border-gray-200">
+          {/* Mobile hamburger menu */}
           <button
             type="button"
             className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden hover:bg-gray-50 transition-colors duration-200"
@@ -353,20 +369,22 @@ export default function DashboardLayout({ children }) {
             <FiMenu className="h-6 w-6" />
           </button>
           
-          <div className="flex-1 px-4 flex justify-between">
+          <div className="flex-1 px-4 flex justify-between items-center">
+            {/* Company name / page title */}
             <div className="flex-1 flex">
               <div className="w-full flex md:ml-0">
                 <div className="relative w-full max-w-xs text-gray-400 focus-within:text-gray-600">
                   <div className="flex items-center h-full">
-                    <span className="text-lg font-semibold text-gray-900">
-                      {user.company?.companyName || 'Company Dashboard'}
+                    <span className="text-lg font-semibold text-gray-900 truncate">
+                      {isMobile ? 'AttendanceHub' : (user.company?.companyName || 'Company Dashboard')}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="ml-4 flex items-center md:ml-6 space-x-4">
+            {/* Header actions - Responsive */}
+            <div className="flex items-center space-x-2 md:space-x-4">
               {/* Notifications */}
               <div className="relative dropdown-container">
                 <button 
@@ -377,12 +395,12 @@ export default function DashboardLayout({ children }) {
                   }}
                   className="relative bg-white p-2 rounded-xl text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:bg-gray-50 transition-all duration-200"
                 >
-                  <FiBell className="h-6 w-6" />
-                  <span className="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-400 ring-2 ring-white"></span>
+                  <FiBell className="h-5 w-5 md:h-6 md:w-6" />
+                  <span className="absolute -top-1 -right-1 block h-2 w-2 md:h-3 md:w-3 rounded-full bg-red-400 ring-2 ring-white"></span>
                 </button>
 
                 {notificationOpen && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-80 rounded-2xl shadow-2xl py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200">
+                  <div className="origin-top-right absolute right-0 mt-2 w-72 md:w-80 rounded-2xl shadow-2xl py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200">
                     <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                       <p className="text-sm font-semibold text-gray-900">Notifications</p>
                     </div>
@@ -418,7 +436,7 @@ export default function DashboardLayout({ children }) {
               {/* Profile dropdown */}
               <div className="relative dropdown-container">
                 <button
-                  className="max-w-xs bg-white flex items-center text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:bg-gray-50 transition-all duration-200 px-3 py-2"
+                  className="max-w-xs bg-white flex items-center text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:bg-gray-50 transition-all duration-200 px-2 md:px-3 py-2"
                   onClick={(e) => {
                     e.stopPropagation();
                     setDropdownOpen(!dropdownOpen);
@@ -426,11 +444,11 @@ export default function DashboardLayout({ children }) {
                   }}
                   disabled={navigating}
                 >
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
+                  <div className="h-6 w-6 md:h-8 md:w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
                     {user.fullName?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="ml-3 text-gray-700 text-sm font-medium hidden lg:block max-w-32 truncate">{user.fullName}</span>
-                  <FiChevronDown className={`ml-2 h-4 w-4 text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <span className="ml-2 md:ml-3 text-gray-700 text-sm font-medium hidden lg:block max-w-32 truncate">{user.fullName}</span>
+                  <FiChevronDown className={`ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {dropdownOpen && (
@@ -486,9 +504,13 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
 
-        <main className="flex-1">
+        {/* Main content area - Mobile first with bottom padding for mobile nav */}
+        <main className="flex-1 pb-16 md:pb-0">
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation - Only visible on mobile */}
+        <MobileBottomNavigation />
       </div>
     </div>
   );
