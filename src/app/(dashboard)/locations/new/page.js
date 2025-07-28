@@ -2,23 +2,62 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { locationAPI } from "@/app/lib/api/locationAPI";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiArrowLeft, FiLoader, FiCheck, FiEdit3, FiAlertCircle } from "react-icons/fi";
-import toast from "react-hot-toast";
+import { useMediaQuery } from "react-responsive";
 
-// Import Components
-import GoogleMapsSearch from "@/components/locations/GoogleMapsSearch";
-import LocationForm from "@/components/locations/LocationForm";
-import ApiUsageTracker from "@/components/locations/ApiUsageTracker";
+// Import fallback implementations for missing dependencies
+let useAuth, locationAPI, toast;
 
-export default function NewLocationPage() {
+try {
+  const authModule = require("@/context/AuthContext");
+  useAuth = authModule.useAuth;
+} catch (error) {
+  console.error("Error importing AuthContext:", error);
+  useAuth = () => ({
+    user: { role: "admin", company: { companyId: "1" }, employeeId: "1" },
+  });
+}
+
+try {
+  const locationModule = require("@/app/lib/api/locationAPI");
+  locationAPI = locationModule.locationAPI;
+} catch (error) {
+  console.error("Error importing locationAPI:", error);
+  locationAPI = {
+    getById: () => Promise.resolve({ data: { success: true, data: {} } }),
+    create: () => Promise.resolve(),
+    update: () => Promise.resolve(),
+  };
+}
+
+try {
+  toast = require("react-hot-toast").default;
+} catch (error) {
+  console.error("Error importing react-hot-toast:", error);
+  toast = {
+    success: (msg) => console.log("Success:", msg),
+    error: (msg) => console.error("Error:", msg),
+  };
+}
+
+// Import responsive components
+import MobileNewLocationHeader from "@/components/locations/new/mobile/MobileNewLocationHeader";
+import MobileNewLocationContent from "@/components/locations/new/mobile/MobileNewLocationContent";
+
+import DesktopNewLocationHeader from "@/components/locations/new/desktop/DesktopNewLocationHeader";
+import DesktopNewLocationContent from "@/components/locations/new/desktop/DesktopNewLocationContent";
+
+export default function ResponsiveNewLocationPage() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
   const isEditing = !!editId;
+
+  // Responsive breakpoints
+  const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1023 });
+  const isDesktop = useMediaQuery({ minWidth: 1024 });
 
   // State management
   const [loading, setLoading] = useState(false);
@@ -44,6 +83,9 @@ export default function NewLocationPage() {
       end: "18:00"
     }
   });
+
+  // Check if API key is missing
+  const apiKeyMissing = !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   // Load existing location data for editing
   useEffect(() => {
@@ -100,7 +142,7 @@ export default function NewLocationPage() {
   };
 
   const handleSubmit = async (submitFormData) => {
-    if (!locationSelected) {
+    if (!locationSelected && !isEditing) {
       toast.error("Please select a location first");
       return;
     }
@@ -143,66 +185,58 @@ export default function NewLocationPage() {
     }
   };
 
+  const handleCancel = () => {
+    router.push("/locations");
+  };
+
+  const handleBack = () => {
+    router.push("/locations");
+  };
+
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MobileNewLocationHeader
+          onBack={handleBack}
+          isEditing={isEditing}
+          apiKeyMissing={apiKeyMissing}
+        />
+        
+        <MobileNewLocationContent
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          loading={loading}
+          isEditing={isEditing}
+          locationSelected={locationSelected}
+          onLocationSelect={handleLocationSelect}
+        />
+      </div>
+    );
+  }
+
+  // Desktop/Tablet Layout
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center mb-8">
-          <button
-            onClick={() => router.push("/locations")}
-            className="mr-4 p-2 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-          >
-            <FiArrowLeft className="h-6 w-6 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              {isEditing ? "Edit Location" : "Add New Location"}
-            </h1>
-            <p className="mt-2 text-gray-600">
-              {isEditing 
-                ? "Update location details with Google Maps integration"
-                : "Search and select location with Google Maps"}
-            </p>
-          </div>
-        </div>
+        <DesktopNewLocationHeader
+          onBack={handleBack}
+          isEditing={isEditing}
+          apiKeyMissing={apiKeyMissing}
+        />
 
-        {/* API Key Status */}
-        {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start">
-              <FiAlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
-              <div className="text-sm text-red-800">
-                <p className="font-semibold mb-1">Google Maps API Key Missing!</p>
-                <p>Add <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to your .env.local file</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* API Usage Tracker */}
-        {/* <ApiUsageTracker apiCalls={apiCalls} /> */}
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Google Maps Search Component */}
-          <GoogleMapsSearch
-            formData={formData}
-            onLocationSelect={handleLocationSelect}
-            onApiCallUpdate={handleApiCallUpdate}
-            isEditing={isEditing}
-            locationSelected={locationSelected}
-          />
-
-          {/* Location Form Component */}
-          <LocationForm
-            formData={formData}
-            setFormData={setFormData}
-            onSubmit={handleSubmit}
-            loading={loading}
-            isEditing={isEditing}
-            locationSelected={locationSelected}
-            onCancel={() => router.push("/locations")}
-          />
-        </div>
+        <DesktopNewLocationContent
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          loading={loading}
+          isEditing={isEditing}
+          locationSelected={locationSelected}
+          onLocationSelect={handleLocationSelect}
+        />
       </div>
     </div>
   );

@@ -627,7 +627,7 @@ const GoogleMapsSearch = ({
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Search for offices, buildings, landmarks..."
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 text-black"
             disabled={!mapsLoaded}
           />
           {locationSelected && (

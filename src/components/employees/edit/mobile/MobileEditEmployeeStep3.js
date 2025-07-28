@@ -1,7 +1,7 @@
 // src/components/employees/edit/mobile/MobileEditEmployeeStep3.js
 'use client';
 
-import { FiBriefcase, FiMapPin, FiCalendar, FiChevronLeft, FiSave, FiShield, FiToggleLeft } from 'react-icons/fi';
+import { FiBriefcase, FiMapPin, FiCalendar, FiChevronLeft, FiSave, FiShield } from 'react-icons/fi';
 
 export default function MobileEditEmployeeStep3({ 
   formData, 
@@ -17,6 +17,11 @@ export default function MobileEditEmployeeStep3({
   setShowCustomDesignation,
   saving
 }) {
+  // Add null checks and default to empty arrays
+  const safeDepartments = departments || [];
+  const safeDesignations = designations || [];
+  const safeLocations = locations || [];
+
   const isValid = formData.departmentId && formData.locationId && formData.dateOfJoining &&
     (showCustomDesignation ? formData.customDesignation.trim() : formData.designationId);
 
@@ -45,7 +50,7 @@ export default function MobileEditEmployeeStep3({
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select Department</option>
-                {departments.map(dept => (
+                {safeDepartments.map(dept => (
                   <option key={dept.DepartmentID} value={dept.DepartmentID}>
                     {dept.DepartmentName}
                   </option>
@@ -66,15 +71,22 @@ export default function MobileEditEmployeeStep3({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {designations.length > 0 && !showCustomDesignation && (
+                    {safeDesignations.length > 0 && !showCustomDesignation && (
                       <select
                         required
                         value={formData.designationId}
-                        onChange={(e) => onInputChange('designationId', e.target.value)}
+                        onChange={(e) => {
+                          if (e.target.value === 'custom') {
+                            setShowCustomDesignation(true);
+                            onInputChange('designationId', '');
+                          } else {
+                            onInputChange('designationId', e.target.value);
+                          }
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select Designation</option>
-                        {designations.map(designation => (
+                        {safeDesignations.map(designation => (
                           <option key={designation.id} value={designation.id}>
                             {designation.label}
                             {designation.BaseSalary && ` (₹${designation.BaseSalary.toLocaleString()})`}
@@ -84,7 +96,7 @@ export default function MobileEditEmployeeStep3({
                       </select>
                     )}
 
-                    {(showCustomDesignation || designations.length === 0) && (
+                    {(showCustomDesignation || safeDesignations.length === 0) && (
                       <div>
                         <input
                           type="text"
@@ -100,7 +112,7 @@ export default function MobileEditEmployeeStep3({
                       </div>
                     )}
 
-                    {designations.length > 0 && showCustomDesignation && (
+                    {safeDesignations.length > 0 && showCustomDesignation && (
                       <button
                         type="button"
                         onClick={() => {
@@ -139,7 +151,7 @@ export default function MobileEditEmployeeStep3({
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Select Work Location</option>
-                    {locations.map(location => (
+                    {safeLocations.map(location => (
                       <option key={location.LocationID} value={location.LocationID.toString()}>
                         {location.LocationName}
                         {location.Address && ` - ${location.Address}`}

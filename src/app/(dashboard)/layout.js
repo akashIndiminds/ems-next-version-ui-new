@@ -7,12 +7,12 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import {
   FiHome, FiUsers, FiCalendar, FiClock, FiFileText, FiSettings,
-  FiLogOut, FiMenu, FiX, FiBell, FiUser, FiChevronDown, FiBarChart
+  FiLogOut, FiBell, FiUser, FiChevronDown, FiBarChart
 } from 'react-icons/fi';
 import { MdBusiness, MdLocationOn } from 'react-icons/md';
 import MobileBottomNavigation from '@/components/MobileBottomNavigation';
 
-// Organized sidebar items with categories for desktop
+// Desktop-only sidebar items (comprehensive list for desktop)
 const sidebarItems = [
   // Main Dashboard
   { 
@@ -107,7 +107,6 @@ const categoryLabels = {
 };
 
 export default function DashboardLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
@@ -147,11 +146,6 @@ export default function DashboardLayout({ children }) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Close mobile sidebar when route changes
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
-
   // Handle navigation with loading states
   const handleNavigation = async (href, itemName, event) => {
     if (event) event.preventDefault();
@@ -164,9 +158,6 @@ export default function DashboardLayout({ children }) {
     try {
       setNavigating(true);
       setActiveNavItem(itemName);
-      
-      // Close mobile sidebar immediately
-      setSidebarOpen(false);
       
       // Navigate to the route
       router.push(href);
@@ -211,7 +202,7 @@ export default function DashboardLayout({ children }) {
     return null;
   }
 
-  // Filter and organize sidebar items by category
+  // Filter and organize sidebar items by category (DESKTOP ONLY)
   const filteredSidebarItems = sidebarItems.filter(item => 
     item.roles.includes(user.role)
   );
@@ -282,7 +273,7 @@ export default function DashboardLayout({ children }) {
         </div>
       )}
 
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Hidden on mobile */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30">
         <div className="flex flex-col min-h-0 bg-white shadow-xl border-r border-gray-200">
           {/* Logo */}
@@ -312,63 +303,10 @@ export default function DashboardLayout({ children }) {
         </div>
       </div>
 
-      {/* Mobile sidebar backdrop and drawer */}
-      {sidebarOpen && (
-        <div className="md:hidden fixed inset-0 flex z-40">
-          <div className="fixed inset-0" onClick={() => setSidebarOpen(false)}>
-            <div className="absolute inset-0 bg-gray-600 opacity-75"></div>
-          </div>
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
-              <button
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <FiX className="h-6 w-6 text-white" />
-              </button>
-            </div>
-            
-            {/* Mobile Logo */}
-            <div className="flex-shrink-0 flex items-center px-6 h-16 bg-gradient-to-r from-blue-600 to-blue-700">
-              <h1 className="text-xl font-bold text-white">AttendanceHub</h1>
-            </div>
-            
-            {/* Mobile Navigation - Same as desktop but with mobile styling */}
-            <div className="flex-1 h-0 pt-4 pb-4 overflow-y-auto">
-              <nav className="px-3">
-                {renderDesktopNavigation()}
-              </nav>
-            </div>
-            
-            {/* Mobile User info */}
-            <div className="flex-shrink-0 flex bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-t border-gray-200">
-              <div className="flex items-center w-full">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.fullName?.charAt(0).toUpperCase()}
-                </div>
-                <div className="ml-3 flex-1 min-w-0">
-                  <p className="text-base font-semibold text-gray-900 truncate">{user.fullName}</p>
-                  <p className="text-sm font-medium text-gray-600 capitalize">{user.role}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main content wrapper - Mobile first with desktop adjustments */}
       <div className="flex flex-col min-h-screen md:pl-64">
-        {/* Top header - Responsive design */}
+        {/* Top header - Simplified for mobile, comprehensive for desktop */}
         <div className="sticky top-0 z-20 flex-shrink-0 flex h-16 bg-white shadow-lg border-b border-gray-200">
-          {/* Mobile hamburger menu */}
-          <button
-            type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden hover:bg-gray-50 transition-colors duration-200"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <FiMenu className="h-6 w-6" />
-          </button>
-          
           <div className="flex-1 px-4 flex justify-between items-center">
             {/* Company name / page title */}
             <div className="flex-1 flex">
@@ -509,7 +447,7 @@ export default function DashboardLayout({ children }) {
           {children}
         </main>
 
-        {/* Mobile Bottom Navigation - Only visible on mobile */}
+        {/* Mobile Bottom Navigation - Only visible on mobile, NO hamburger menu redundancy */}
         <MobileBottomNavigation />
       </div>
     </div>
