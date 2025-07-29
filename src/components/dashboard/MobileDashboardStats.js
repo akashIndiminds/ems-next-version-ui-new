@@ -13,8 +13,7 @@ const MobileDashboardStats = ({ stats, userRole }) => {
       title: "Total Employees",
       value: stats?.ActiveEmployees || 0,
       icon: FiUsers,
-      color: "from-blue-500 to-blue-600",
-      bgColor: "from-blue-50 to-blue-100",
+      bgColor: "bg-blue-500",
       href: "/employees",
       change: "+5.2%"
     },
@@ -22,8 +21,7 @@ const MobileDashboardStats = ({ stats, userRole }) => {
       title: "Present Today", 
       value: stats?.TodayAttendance || 0,
       icon: FiClock,
-      color: "from-emerald-500 to-emerald-600",
-      bgColor: "from-emerald-50 to-emerald-100",
+      bgColor: "bg-emerald-500",
       href: "/attendanceManagement",
       change: "+12%"
     },
@@ -31,8 +29,7 @@ const MobileDashboardStats = ({ stats, userRole }) => {
       title: "Pending Leaves",
       value: stats?.PendingLeaves || 0,
       icon: FiCalendar,
-      color: "from-amber-500 to-amber-600", 
-      bgColor: "from-amber-50 to-amber-100",
+      bgColor: "bg-amber-500",
       href: "/leaves/approved",
       change: "-8%"
     },
@@ -40,8 +37,7 @@ const MobileDashboardStats = ({ stats, userRole }) => {
       title: "Departments",
       value: stats?.TotalDepartments || 0,
       icon: FiTrendingUp,
-      color: "from-purple-500 to-purple-600",
-      bgColor: "from-purple-50 to-purple-100",
+      bgColor: "bg-purple-500",
       href: "/departments"
     }
   ];
@@ -58,7 +54,7 @@ const MobileDashboardStats = ({ stats, userRole }) => {
 
       {/* Horizontal Scrollable Cards */}
       <div className="p-4">
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -66,9 +62,9 @@ const MobileDashboardStats = ({ stats, userRole }) => {
                 key={index}
                 className="bg-white rounded-xl border border-gray-200 p-4 min-w-[140px] flex-shrink-0 hover:shadow-md transition-shadow duration-200"
               >
-                {/* Icon with gradient background */}
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.bgColor} flex items-center justify-center mb-3`}>
-                  <Icon className={`h-5 w-5 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} />
+                {/* Icon with solid background */}
+                <div className={`w-10 h-10 ${stat.bgColor} rounded-xl flex items-center justify-center mb-3`}>
+                  <Icon className="h-5 w-5 text-white" />
                 </div>
 
                 {/* Stats */}

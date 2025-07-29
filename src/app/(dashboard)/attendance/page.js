@@ -239,64 +239,118 @@ export default function AttendancePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+        {/* Modern Responsive Header */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 lg:gap-6 lg:items-start">
+          {/* Content Section */}
+          <div className="space-y-2">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
               Attendance
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-2xl">
               Track your attendance with location verification
             </p>
+            
+            {/* Breadcrumb/Status Info - Only on desktop */}
+            <div className="hidden lg:flex items-center gap-2 text-sm text-gray-500 mt-3">
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                Location enabled
+              </span>
+              <span className="text-gray-300">•</span>
+              <span>Last updated: just now</span>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+
+          {/* Actions Section */}
+          <div className="flex flex-col sm:flex-row gap-3 lg:gap-2 lg:flex-col xl:flex-row">
+            {/* Primary Action */}
             <button
               onClick={fetchAttendanceData}
               disabled={loading}
-              className="bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-200 flex items-center justify-center transition-colors duration-200 font-medium disabled:opacity-50"
+              className="group flex items-center justify-center gap-2 px-4 py-2.5 md:px-5 md:py-3 
+                         bg-white border border-gray-300 text-gray-700 font-medium text-sm md:text-base
+                         rounded-xl hover:bg-gray-50 hover:border-gray-400 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         transition-all duration-200 shadow-sm hover:shadow-md
+                         min-h-[44px] lg:min-w-[120px]"
             >
-              <FiRefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Refreshing...' : 'Refresh'}
+              <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-300`} />
+              <span className="hidden sm:inline">{loading ? 'Refreshing...' : 'Refresh'}</span>
+              <span className="sm:hidden">{loading ? 'Refreshing...' : 'Refresh'}</span>
             </button>
-            <button className="bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 flex items-center justify-center transition-colors duration-200 shadow-lg font-medium">
-              <FiDownload className="mr-2" />
-              Export
+
+            {/* Secondary Action */}
+            <button 
+              className="group flex items-center justify-center gap-2 px-4 py-2.5 md:px-5 md:py-3
+                         bg-blue-600 text-white font-medium text-sm md:text-base
+                         rounded-xl hover:bg-blue-700 active:bg-blue-800
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                         transition-all duration-200 shadow-lg hover:shadow-xl
+                         min-h-[44px] lg:min-w-[120px]"
+            >
+              <FiDownload className="h-4 w-4 group-hover:translate-y-0.5 transition-transform duration-200" />
+              <span className="hidden sm:inline">Export</span>
+              <span className="sm:hidden">Export</span>
+            </button>
+
+            {/* Tertiary Action - Only visible on larger screens */}
+            <button 
+              className="hidden xl:flex items-center justify-center gap-2 px-4 py-2.5
+                         bg-gray-100 text-gray-600 font-medium text-sm
+                         rounded-xl hover:bg-gray-200 hover:text-gray-700
+                         focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
+                         transition-all duration-200
+                         min-h-[44px] min-w-[100px]"
+            >
+              <FiClock className="h-4 w-4" />
+              <span>History</span>
             </button>
           </div>
         </div>
 
-        {/* Today's Status */}
-      {/* Today's Status - Mobile Version */}
-<MobileTodayStatus 
-  todayStatus={todayStatus}
-  userLocation={userLocation}
-  handleCheckIn={handleCheckIn}
-  handleCheckOut={handleCheckOut}
-  checkInLoading={checkInLoading}
-  checkOutLoading={checkOutLoading}
-  gettingLocation={gettingLocation}
-  timeUtils={timeUtils}
-/>
+        {/* Mobile Status Bar - Only visible on mobile */}
+        <div className="lg:hidden flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+          <div className="flex items-center gap-2 text-sm text-blue-700">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="font-medium">Location enabled</span>
+          </div>
+          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+            Live
+          </span>
+        </div>
 
-{/* Today's Status - Desktop Version */}
-<DesktopTodayStatus 
-  todayStatus={todayStatus}
-  userLocation={userLocation}
-  handleCheckIn={handleCheckIn}
-  handleCheckOut={handleCheckOut}
-  checkInLoading={checkInLoading}
-  checkOutLoading={checkOutLoading}
-  gettingLocation={gettingLocation}
-  timeUtils={timeUtils}
-  FiTarget={FiTarget}
-  FiPlay={FiPlay}
-  FiPause={FiPause}
-  FiClock={FiClock}
-  FiTrendingUp={FiTrendingUp}
-  FiChevronRight={FiChevronRight}
-  FiAlertTriangle={FiAlertTriangle}
-  FiCheckCircle={FiCheckCircle}
-/>
+        {/* Today's Status - Mobile Version */}
+        <MobileTodayStatus 
+          todayStatus={todayStatus}
+          userLocation={userLocation}
+          handleCheckIn={handleCheckIn}
+          handleCheckOut={handleCheckOut}
+          checkInLoading={checkInLoading}
+          checkOutLoading={checkOutLoading}
+          gettingLocation={gettingLocation}
+          timeUtils={timeUtils}
+        />
+
+        {/* Today's Status - Desktop Version */}
+        <DesktopTodayStatus 
+          todayStatus={todayStatus}
+          userLocation={userLocation}
+          handleCheckIn={handleCheckIn}
+          handleCheckOut={handleCheckOut}
+          checkInLoading={checkInLoading}
+          checkOutLoading={checkOutLoading}
+          gettingLocation={gettingLocation}
+          timeUtils={timeUtils}
+          FiTarget={FiTarget}
+          FiPlay={FiPlay}
+          FiPause={FiPause}
+          FiClock={FiClock}
+          FiTrendingUp={FiTrendingUp}
+          FiChevronRight={FiChevronRight}
+          FiAlertTriangle={FiAlertTriangle}
+          FiCheckCircle={FiCheckCircle}
+        />
 
         {/* Attendance History */}
         <div className="bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden">

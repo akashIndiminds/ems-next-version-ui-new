@@ -319,17 +319,17 @@ export default function DashboardLayout({ children }) {
           <div className="flex-1 px-4 flex justify-between items-center">
             {/* Company name / page title */}
             <div className="flex-1 flex">
-              <div className="w-full flex md:ml-0">
-                <div className="relative w-full max-w-xs text-gray-400 focus-within:text-gray-600">
-                  <div className="flex items-center h-full">
-                    <span className="text-lg font-semibold text-gray-900 truncate">
-                      {isMobile ? 'AttendanceHub' : (user.company?.companyName || 'Company Dashboard')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
+  <div className="w-full flex md:ml-0">
+    <div className="relative w-full max-w-xs md:max-w-md lg:max-w-lg text-gray-400 focus-within:text-gray-600">
+      <div className="flex items-center h-full">
+        <span className="text-sm md:text-lg lg:text-xl font-semibold text-gray-900 truncate transition-all duration-200">
+          {user.company?.companyName || 'AttendanceHub'}
+           {/* {isMobile ? 'AttendanceHub' : (user.company?.companyName || 'Company Dashboard')} */}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
             {/* Header actions - Responsive */}
             <div className="flex items-center space-x-2 md:space-x-4">
               {/* Notifications */}
@@ -452,7 +452,7 @@ export default function DashboardLayout({ children }) {
         </div>
 
         {/* Main content area - Mobile first with bottom padding for mobile nav */}
-        <main className="flex-1 pb-16 md:pb-0 p-6">
+        <main className="flex-1 pb-16 md:pb-0">
           {children}
         </main>
 

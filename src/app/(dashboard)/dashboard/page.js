@@ -238,27 +238,30 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 sm:p-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Dashboard
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Welcome back, {user.fullName}! Here's what's happening today.
-            </p>
-            <div className="mt-1 text-xs text-gray-500">
-              {timeUtils.formatDateTime(new Date().toISOString())}
-            </div>
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 font-medium"
-          >
-            <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 md:gap-6">
+      <div className="flex-1">
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          Dashboard
+        </h1>
+        <p className="mt-1 text-sm md:text-base text-gray-600 leading-relaxed">
+          Welcome back, {user.fullName}! Here's what's happening today.
+        </p>
+        <div className="mt-2 text-xs md:text-sm text-gray-500">
+          {timeUtils.formatDateTime(new Date().toISOString())}
         </div>
+      </div>
+      
+      <div className="flex-shrink-0 md:mt-0">
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 font-medium text-sm md:text-base"
+        >
+          <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
+    </div>
 
         {/* Today's Attendance Status - Mobile Version */}
         <MobileAttendanceStatus 
@@ -293,10 +296,10 @@ export default function DashboardPage() {
         />
 
         {/* Attendance Chart - Mobile Version */}
-        <MobileDashboardChart 
+        {/* <MobileDashboardChart 
           chartData={chartData}
           userRole={user.role}
-        />
+        /> */}
 
         {/* Attendance Chart - Desktop Version */}
         <DesktopDashboardChart 

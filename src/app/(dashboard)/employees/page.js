@@ -233,14 +233,15 @@ export default function ResponsiveEmployeesPage() {
         {/* Mobile Search Bar */}
         {showMobileSearch && (
           <div className="px-4 py-3 bg-white border-b border-gray-200">
-            <input
-              type="text"
-              placeholder="Search employees..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              autoFocus
-            />
+           <input
+  type="text"
+  placeholder="Search employees..."
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+  className="w-full px-4 py-3 border rounded-xl text-black 
+             border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none"
+/>
+
           </div>
         )}
 

@@ -1,14 +1,24 @@
 // src/components/MobileBottomNavigation.js
-'use client';
+"use client";
 
-import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import {
-  FiHome, FiUsers, FiClock, FiMoreHorizontal, FiChevronUp, FiX,
-  FiFileText, FiBarChart, FiSettings, FiUser, FiLogOut
-} from 'react-icons/fi';
-import { MdBusiness, MdLocationOn } from 'react-icons/md';
+  FiHome,
+  FiUsers,
+  FiClock,
+  FiMoreHorizontal,
+  FiChevronUp,
+  FiX,
+  FiFileText,
+  FiBarChart,
+  FiSettings,
+  FiUser,
+  FiLogOut,
+} from "react-icons/fi";
+import { MdOutlineBeachAccess, MdOutlineCalendarMonth } from "react-icons/md";
+import { MdBusiness, MdLocationOn } from "react-icons/md";
 
 const MobileBottomNavigation = () => {
   const pathname = usePathname();
@@ -20,110 +30,125 @@ const MobileBottomNavigation = () => {
   // Primary navigation items (max 4 + More button = 5 total as per research)
   const primaryNavItems = [
     {
-      id: 'home',
-      name: 'Home',
-      href: '/dashboard',
+      id: "home",
+      name: "Home",
+      href: "/dashboard",
       icon: FiHome,
-      roles: ['admin', 'manager', 'employee'],
-      description: 'Dashboard & Overview'
+      roles: ["admin", "manager", "employee"],
+      description: "Dashboard & Overview",
     },
     {
-      id: 'people',
-      name: 'People',
-      href: '/employees',
+      id: "people",
+      name: "People",
+      href: "/employees",
       icon: FiUsers,
-      roles: ['admin', 'manager', 'employee'],
-      description: 'Team & Directory',
-      fallback: '/attendance' // For employees who can't access /employees
+      roles: ["admin", "manager", "employee"],
+      description: "Team & Directory",
+      fallback: "/leaves", // Changed fallback for employees to see their leaves
+      employeeIcon: MdOutlineBeachAccess, // Different icon for employees
     },
     {
-      id: 'time',
-      name: 'Time',
-      href: '/attendance',
+      id: "time",
+      name: "Time",
+      href: "/attendance",
       icon: FiClock,
-      roles: ['admin', 'manager', 'employee'],
-      description: 'Attendance & Leaves'
+      roles: ["admin", "manager", "employee"],
+      description: "Attendance & Leaves",
     },
     {
-      id: 'more',
-      name: 'More',
+      id: "more",
+      name: "More",
       href: null, // No direct href - opens menu
       icon: FiMoreHorizontal,
-      roles: ['admin', 'manager', 'employee'],
-      description: 'More Options',
-      isMoreButton: true
-    }
+      roles: ["admin", "manager", "employee"],
+      description: "More Options",
+      isMoreButton: true,
+    },
   ];
 
   // Secondary navigation items - accessed via "More" menu
   const secondaryNavItems = [
     // Reports & Analytics Section
     {
-      section: 'Reports & Analytics',
+      section: "Reports & Analytics",
       items: [
         {
-          name: 'Reports',
-          href: '/reports',
+          name: "Reports",
+          href: "/reports",
           icon: FiFileText,
-          roles: ['admin', 'manager'],
-          description: 'View attendance and leave reports'
+          roles: ["admin", "manager"],
+          description: "View attendance and leave reports",
         },
         {
-          name: 'Attendance Manager',
-          href: '/attendanceManagement',
+          name: "Attendance Manager",
+          href: "/attendanceManagement",
           icon: FiBarChart,
-          roles: ['admin', 'manager'],
-          description: 'Manage team attendance'
-        }
-      ]
+          roles: ["admin", "manager"],
+          description: "Manage team attendance",
+        },
+      ],
     },
     // Organization Section
     {
-      section: 'Organization',
+      section: "Organization",
       items: [
         {
-          name: 'Departments',
-          href: '/departments',
+          name: "Departments",
+          href: "/departments",
           icon: MdBusiness,
-          roles: ['admin', 'manager'],
-          description: 'Manage departments'
+          roles: ["admin", "manager"],
+          description: "Manage departments",
         },
         {
-          name: 'Locations',
-          href: '/locations',
+          name: "Locations",
+          href: "/locations",
           icon: MdLocationOn,
-          roles: ['admin'],
-          description: 'Manage office locations'
+          roles: ["admin"],
+          description: "Manage office locations",
         },
         {
-          name: 'Company Settings',
-          href: '/company',
+          name: "Company Settings",
+          href: "/company",
           icon: FiSettings,
-          roles: ['admin'],
-          description: 'Configure company settings'
-        }
-      ]
+          roles: ["admin"],
+          description: "Configure company settings",
+        },
+      ],
     },
-    // Personal Section
+    // Personal Section - Added Leave Management for employees
     {
-      section: 'Personal',
+      section: "Personal",
       items: [
         {
-          name: 'My Profile',
-          href: '/profile',
-          icon: FiUser,
-          roles: ['admin', 'manager', 'employee'],
-          description: 'Update your profile information'
+          name: "My Leaves",
+          href: "/leaves",
+          icon: MdOutlineBeachAccess,
+          roles: ["employee"], // Only for employees
+          description: "View and manage your leave applications",
         },
         {
-          name: 'Settings',
-          href: '/settings',
+          name: "Leave Balance",
+          href: "/leaveBalance",
+          icon: MdOutlineCalendarMonth,
+          roles: ["employee"], // Only for employees
+          description: "Check your leave balance",
+        },
+        {
+          name: "My Profile",
+          href: "/profile",
+          icon: FiUser,
+          roles: ["admin", "manager", "employee"],
+          description: "Update your profile information",
+        },
+        {
+          name: "Settings",
+          href: "/settings",
           icon: FiSettings,
-          roles: ['admin', 'manager', 'employee'],
-          description: 'App settings and preferences'
-        }
-      ]
-    }
+          roles: ["admin", "manager", "employee"],
+          description: "App settings and preferences",
+        },
+      ],
+    },
   ];
 
   const handleNavigation = async (item) => {
@@ -139,7 +164,9 @@ const MobileBottomNavigation = () => {
 
     // Handle role-based navigation
     let targetHref = item.href;
-    if (item.id === 'people' && !item.roles.includes(user.role) && item.fallback) {
+
+    // For employees, redirect People tab to their leaves instead of employees list
+    if (item.id === "people" && user.role === "employee" && item.fallback) {
       targetHref = item.fallback;
     }
 
@@ -148,64 +175,73 @@ const MobileBottomNavigation = () => {
       setMoreMenuOpen(false); // Close more menu when navigating
       setTimeout(() => setActiveTab(null), 300);
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error("Navigation error:", error);
       setActiveTab(null);
     }
   };
 
   const handleSecondaryNavigation = async (href, itemName) => {
     setActiveTab(itemName);
-    
+
     try {
       router.push(href);
       setMoreMenuOpen(false);
       setTimeout(() => setActiveTab(null), 300);
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error("Navigation error:", error);
       setActiveTab(null);
     }
   };
 
   const isActive = (item) => {
     // Home tab logic
-    if (item.id === 'home') {
-      return pathname === '/dashboard';
+    if (item.id === "home") {
+      return pathname === "/dashboard";
     }
-    
-    // People tab logic - active for employee-related pages
-    if (item.id === 'people') {
-      return pathname.startsWith('/employees') || 
-             pathname.startsWith('/departments') ||
-             (pathname.startsWith('/attendance') && user.role === 'employee');
+
+    // People tab logic - different behavior based on role
+    if (item.id === "people") {
+      if (user.role === "employee") {
+        // For employees, People tab is active when viewing leaves
+        return (
+          pathname.startsWith("/leaves") || pathname.startsWith("/leaveBalance")
+        );
+      } else {
+        // For admin/manager, People tab is active for employee-related pages
+        return (
+          pathname.startsWith("/employees") ||
+          pathname.startsWith("/departments")
+        );
+      }
     }
-    
-    // Time tab logic - attendance and leave related
-    if (item.id === 'time') {
-      return pathname.startsWith('/attendance') || 
-             pathname.startsWith('/leaves') || 
-             pathname.startsWith('/leaveBalance');
+
+    // Time tab logic - attendance related
+    if (item.id === "time") {
+      return pathname.startsWith("/attendance");
     }
-    
+
     // More tab logic - check if current path is in secondary navigation
-    if (item.id === 'more') {
-      const allSecondaryPaths = secondaryNavItems.flatMap(section => 
-        section.items.map(item => item.href)
+    if (item.id === "more") {
+      const allSecondaryPaths = secondaryNavItems.flatMap((section) =>
+        section.items.map((item) => item.href)
       );
-      return allSecondaryPaths.some(path => pathname.startsWith(path)) || 
-             pathname.startsWith('/reports') || 
-             pathname.startsWith('/locations') || 
-             pathname.startsWith('/company') ||
-             pathname.startsWith('/settings') ||
-             pathname.startsWith('/profile') ||
-             pathname === '/more';
+      return (
+        allSecondaryPaths.some((path) => pathname.startsWith(path)) ||
+        pathname.startsWith("/reports") ||
+        pathname.startsWith("/locations") ||
+        pathname.startsWith("/company") ||
+        pathname.startsWith("/settings") ||
+        pathname.startsWith("/profile") ||
+        pathname === "/more"
+      );
     }
-    
+
     return false;
   };
 
   const getDisplayName = (item) => {
-    if (item.id === 'people' && user.role === 'employee') {
-      return 'Team';
+    if (item.id === "people" && user.role === "employee") {
+      return "Leaves"; // Changed from 'Team' to 'Leaves' for employees
     }
     return item.name;
   };
@@ -213,14 +249,14 @@ const MobileBottomNavigation = () => {
   // Close more menu when clicking outside or on route change
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.more-menu-container')) {
+      if (!event.target.closest(".more-menu-container")) {
         setMoreMenuOpen(false);
       }
     };
 
     if (moreMenuOpen) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [moreMenuOpen]);
 
@@ -236,7 +272,9 @@ const MobileBottomNavigation = () => {
           <div className="absolute bottom-16 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[70vh] overflow-y-auto more-menu-container">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-3xl">
-              <h3 className="text-lg font-semibold text-gray-900">More Options</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                More Options
+              </h3>
               <button
                 onClick={() => setMoreMenuOpen(false)}
                 className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
@@ -252,8 +290,12 @@ const MobileBottomNavigation = () => {
                   {user.fullName?.charAt(0).toUpperCase()}
                 </div>
                 <div className="ml-3 flex-1">
-                  <h4 className="text-sm font-semibold text-gray-900">{user.fullName}</h4>
-                  <p className="text-xs text-gray-600 capitalize">{user.role}</p>
+                  <h4 className="text-sm font-semibold text-gray-900">
+                    {user.fullName}
+                  </h4>
+                  <p className="text-xs text-gray-600 capitalize">
+                    {user.role}
+                  </p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
               </div>
@@ -262,10 +304,10 @@ const MobileBottomNavigation = () => {
             {/* Secondary Navigation Sections */}
             <div className="pb-4">
               {secondaryNavItems.map((section) => {
-                const visibleItems = section.items.filter(item => 
+                const visibleItems = section.items.filter((item) =>
                   item.roles.includes(user.role)
                 );
-                
+
                 if (visibleItems.length === 0) return null;
 
                 return (
@@ -281,24 +323,34 @@ const MobileBottomNavigation = () => {
                         return (
                           <button
                             key={item.name}
-                            onClick={() => handleSecondaryNavigation(item.href, item.name)}
+                            onClick={() =>
+                              handleSecondaryNavigation(item.href, item.name)
+                            }
                             disabled={activeTab === item.name}
                             className={`
                               w-full flex items-center px-3 py-3 text-left rounded-xl transition-all duration-200
-                              ${activeTab === item.name 
-                                ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                                : 'hover:bg-gray-50 active:bg-gray-100'
+                              ${
+                                activeTab === item.name
+                                  ? "opacity-50 cursor-not-allowed bg-gray-50"
+                                  : "hover:bg-gray-50 active:bg-gray-100"
                               }
-                              ${pathname.startsWith(item.href) ? 'bg-blue-50 border border-blue-200' : ''}
+                              ${
+                                pathname.startsWith(item.href)
+                                  ? "bg-blue-50 border border-blue-200"
+                                  : ""
+                              }
                             `}
                           >
-                            <div className={`
+                            <div
+                              className={`
                               flex-shrink-0 p-2 rounded-lg
-                              ${pathname.startsWith(item.href) 
-                                ? 'bg-blue-100 text-blue-600' 
-                                : 'bg-gray-100 text-gray-600'
+                              ${
+                                pathname.startsWith(item.href)
+                                  ? "bg-blue-100 text-blue-600"
+                                  : "bg-gray-100 text-gray-600"
                               }
-                            `}>
+                            `}
+                            >
                               <IconComponent className="h-4 w-4" />
                             </div>
                             <div className="ml-3 flex-1 min-w-0">
@@ -332,10 +384,10 @@ const MobileBottomNavigation = () => {
                 <button
                   onClick={() => {
                     // Add your actual logout function here
-                    if (typeof logout === 'function') {
+                    if (typeof logout === "function") {
                       logout();
                     } else {
-                      console.log('Logout clicked - implement logout logic');
+                      console.log("Logout clicked - implement logout logic");
                     }
                   }}
                   className="w-full flex items-center px-3 py-3 text-left rounded-xl transition-all duration-200 hover:bg-red-50 active:bg-red-100"
@@ -344,8 +396,12 @@ const MobileBottomNavigation = () => {
                     <FiLogOut className="h-4 w-4" />
                   </div>
                   <div className="ml-3 flex-1">
-                    <h5 className="text-sm font-medium text-red-600">Sign Out</h5>
-                    <p className="text-xs text-red-500 mt-0.5">Sign out of your account</p>
+                    <h5 className="text-sm font-medium text-red-600">
+                      Sign Out
+                    </h5>
+                    <p className="text-xs text-red-500 mt-0.5">
+                      Sign out of your account
+                    </p>
                   </div>
                 </button>
               </div>
@@ -360,12 +416,12 @@ const MobileBottomNavigation = () => {
           {/* Navigation Items */}
           <div className="grid grid-cols-4 h-16">
             {primaryNavItems
-              .filter(item => item.roles.includes(user.role))
+              .filter((item) => item.roles.includes(user.role))
               .map((item) => {
                 const active = isActive(item);
                 const loading = activeTab === item.id;
                 const isMoreActive = item.isMoreButton && moreMenuOpen;
-                
+
                 return (
                   <button
                     key={item.id}
@@ -373,33 +429,68 @@ const MobileBottomNavigation = () => {
                     disabled={loading && !item.isMoreButton}
                     className={`
                       flex flex-col items-center justify-center px-1 py-2 transition-all duration-200 relative
-                      ${active || isMoreActive
-                        ? 'text-blue-600 bg-blue-50' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ${
+                        active || isMoreActive
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                       }
-                      ${loading ? 'opacity-60' : ''}
+                      ${loading ? "opacity-60" : ""}
                     `}
                   >
                     <div className="relative">
-                      <item.icon 
-                        className={`
-                          h-5 w-5 transition-all duration-200
-                          ${active || isMoreActive ? 'text-blue-600 scale-110' : 'text-gray-500'}
-                          ${loading ? 'animate-pulse' : ''}
-                          ${item.isMoreButton && moreMenuOpen ? 'rotate-180' : ''}
-                        `} 
-                      />
+                      {/* Use different icon for employees on People tab */}
+                      {item.id === "people" && user.role === "employee" ? (
+                        <item.employeeIcon
+                          className={`
+                            h-5 w-5 transition-all duration-200
+                            ${
+                              active || isMoreActive
+                                ? "text-blue-600 scale-110"
+                                : "text-gray-500"
+                            }
+                            ${loading ? "animate-pulse" : ""}
+                            ${
+                              item.isMoreButton && moreMenuOpen
+                                ? "rotate-180"
+                                : ""
+                            }
+                          `}
+                        />
+                      ) : (
+                        <item.icon
+                          className={`
+                            h-5 w-5 transition-all duration-200
+                            ${
+                              active || isMoreActive
+                                ? "text-blue-600 scale-110"
+                                : "text-gray-500"
+                            }
+                            ${loading ? "animate-pulse" : ""}
+                            ${
+                              item.isMoreButton && moreMenuOpen
+                                ? "rotate-180"
+                                : ""
+                            }
+                          `}
+                        />
+                      )}
                       {(active || isMoreActive) && (
                         <div className="absolute -top-1 -right-1 h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
                       )}
                     </div>
-                    <span className={`
+                    <span
+                      className={`
                       text-xs font-medium mt-1 transition-all duration-200
-                      ${active || isMoreActive ? 'text-blue-600 font-semibold' : 'text-gray-600'}
-                    `}>
+                      ${
+                        active || isMoreActive
+                          ? "text-blue-600 font-semibold"
+                          : "text-gray-600"
+                      }
+                    `}
+                    >
                       {getDisplayName(item)}
                     </span>
-                    
+
                     {/* More button indicator */}
                     {item.isMoreButton && moreMenuOpen && (
                       <FiChevronUp className="absolute -top-1 right-1 h-3 w-3 text-blue-600" />
@@ -408,7 +499,7 @@ const MobileBottomNavigation = () => {
                 );
               })}
           </div>
-          
+
           {/* Safe area for iPhone home indicator */}
           <div className="h-safe-area-inset-bottom bg-white"></div>
         </div>

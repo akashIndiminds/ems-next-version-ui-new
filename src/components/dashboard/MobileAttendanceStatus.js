@@ -25,90 +25,99 @@ const MobileAttendanceStatus = ({
         </p>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-3">
         {todayStatus ? (
           <>
-            {/* Status Cards - Horizontal Scroll */}
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {/* Check In Card */}
-              <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl p-3 min-w-[120px] flex-shrink-0 border border-emerald-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-                    <FiPlay className="h-4 w-4 text-white" />
+            {/* Compact Status Info */}
+            <div className="space-y-2">
+              {/* Check In Status */}
+              <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                <div className="flex items-center">
+                  <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                    <FiPlay className="h-3 w-3 text-emerald-600" />
                   </div>
-                  <Clock className="h-3 w-3 text-emerald-600" />
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">Check In</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {todayStatus.CheckInTime ? 'Recorded' : 'Pending'}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="font-medium text-gray-900 text-xs mb-1">Check In</h3>
-                <div className="text-lg font-bold text-emerald-900 mb-1">
-                  {todayStatus.CheckInTime ? timeUtils.formatTimeUTC(todayStatus.CheckInTime) : '--:--'}
+                <div className="text-right">
+                  <div className="text-sm font-bold text-emerald-900">
+                    {todayStatus.CheckInTime ? timeUtils.formatTimeUTC(todayStatus.CheckInTime) : '--:--'}
+                  </div>
                 </div>
-                <p className="text-xs text-emerald-700">
-                  {todayStatus.CheckInTime ? 'Recorded' : 'Pending'}
-                </p>
               </div>
 
-              {/* Check Out Card */}
-              <div className="bg-gradient-to-br from-rose-50 to-red-100 rounded-xl p-3 min-w-[120px] flex-shrink-0 border border-rose-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 bg-rose-600 rounded-lg flex items-center justify-center">
-                    <FiPause className="h-4 w-4 text-white" />
+              {/* Check Out Status */}
+              <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                <div className="flex items-center">
+                  <div className="w-6 h-6 bg-rose-100 rounded-lg flex items-center justify-center mr-3">
+                    <FiPause className="h-3 w-3 text-rose-600" />
                   </div>
-                  <Clock className="h-3 w-3 text-rose-600" />
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">Check Out</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {todayStatus.CheckOutTime ? 'Recorded' : todayStatus.CheckInTime ? 'Ready' : 'Pending'}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="font-medium text-gray-900 text-xs mb-1">Check Out</h3>
-                <div className="text-lg font-bold text-rose-900 mb-1">
-                  {todayStatus.CheckOutTime ? timeUtils.formatTimeUTC(todayStatus.CheckOutTime) : '--:--'}
+                <div className="text-right">
+                  <div className="text-sm font-bold text-rose-900">
+                    {todayStatus.CheckOutTime ? timeUtils.formatTimeUTC(todayStatus.CheckOutTime) : '--:--'}
+                  </div>
                 </div>
-                <p className="text-xs text-rose-700">
-                  {todayStatus.CheckOutTime ? 'Recorded' : todayStatus.CheckInTime ? 'Ready' : 'Pending'}
-                </p>
               </div>
 
-              {/* Working Hours Card */}
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-xl p-3 min-w-[140px] flex-shrink-0 border border-purple-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <FiClock className="h-4 w-4 text-white" />
+              {/* Working Hours */}
+              <div className="flex items-center justify-between py-2">
+                <div className="flex items-center">
+                  <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                    <FiClock className="h-3 w-3 text-purple-600" />
                   </div>
-                  {liveWorkingHours && (
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                  )}
+                  <div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {liveWorkingHours ? 'Live Hours' : 'Total Hours'}
+                    </span>
+                    {liveWorkingHours && (
+                      <span className="inline-flex items-center ml-2">
+                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse mr-1"></div>
+                        <span className="text-xs text-purple-600">Live</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <h3 className="font-medium text-gray-900 text-xs mb-1">
-                  {liveWorkingHours ? 'Live Hours' : 'Total Hours'}
-                </h3>
-                <div className="text-lg font-bold text-purple-900 mb-1">
-                  {todayStatus.CheckInTime && todayStatus.CheckOutTime 
-                    ? `${timeUtils.calculateWorkingHours(todayStatus.CheckInTime, todayStatus.CheckOutTime)}h`
-                    : liveWorkingHours 
-                      ? `${liveWorkingHours}h`
-                      : '0h 0m'
-                  }
+                <div className="text-right">
+                  <div className="text-sm font-bold text-purple-900">
+                    {todayStatus.CheckInTime && todayStatus.CheckOutTime 
+                      ? `${timeUtils.calculateWorkingHours(todayStatus.CheckInTime, todayStatus.CheckOutTime)}h`
+                      : liveWorkingHours 
+                        ? `${liveWorkingHours}h`
+                        : '0h 0m'
+                    }
+                  </div>
                 </div>
-                <p className="text-xs text-purple-700">
-                  {liveWorkingHours ? 'In progress' : 'Total today'}
-                </p>
               </div>
             </div>
 
-            {/* Live Timer */}
+            {/* Live Timer Banner */}
             {todayStatus.CheckInTime && !todayStatus.CheckOutTime && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-200">
-                <div className="text-center">
-                  <div className="text-xs font-medium text-blue-700 mb-1">Time since check-in</div>
-                  <div className="text-lg font-bold text-blue-900">
-                    {timeUtils.formatTimeDifference(todayStatus.CheckInTime, currentTime.toISOString())}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse mr-2"></div>
+                    <span className="text-xs font-medium text-blue-700">Time since check-in</span>
                   </div>
-                  <div className="flex items-center justify-center mt-1">
-                    <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse mr-1"></div>
-                    <span className="text-xs text-blue-600">Live</span>
+                  <div className="text-sm font-bold text-blue-900">
+                    {timeUtils.formatTimeDifference(todayStatus.CheckInTime, currentTime.toISOString())}
                   </div>
                 </div>
               </div>
             )}
 
             {/* Action Button */}
-            <div className="flex justify-center">
+            <div className="flex justify-center pt-2">
               {!todayStatus.CheckInTime ? (
                 <button
                   onClick={handleCheckIn}
@@ -134,18 +143,18 @@ const MobileAttendanceStatus = ({
             </div>
 
             {/* Completed Summary */}
-            {todayStatus.CheckInTime && todayStatus.CheckOutTime && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200">
-                <div className="text-center">
-                  <div className="text-xs font-medium text-green-700 mb-2">Today's Summary</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
+            {/* {todayStatus.CheckInTime && todayStatus.CheckOutTime && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-medium text-green-700">Today's Summary</div>
+                  <div className="flex gap-4 text-xs">
+                    <div className="text-right">
                       <div className="text-green-600 font-medium">Session</div>
                       <div className="text-green-900 font-bold">
                         {timeUtils.formatTimeDifference(todayStatus.CheckInTime, todayStatus.CheckOutTime)}
                       </div>
                     </div>
-                    <div>
+                    <div className="text-right">
                       <div className="text-green-600 font-medium">Hours</div>
                       <div className="text-green-900 font-bold">
                         {timeUtils.calculateWorkingHours(todayStatus.CheckInTime, todayStatus.CheckOutTime)}h
@@ -154,13 +163,13 @@ const MobileAttendanceStatus = ({
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
           </>
         ) : (
           /* No Attendance Today */
-          <div className="text-center py-6">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FiClock className="h-8 w-8 text-gray-400" />
+          <div className="text-center py-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <FiClock className="h-6 w-6 text-gray-400" />
             </div>
             <p className="text-gray-500 font-medium mb-1">No attendance today</p>
             <p className="text-xs text-gray-400 mb-4">Start your day by checking in</p>

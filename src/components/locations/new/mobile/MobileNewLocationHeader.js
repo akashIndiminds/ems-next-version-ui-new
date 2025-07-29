@@ -9,7 +9,7 @@ export default function MobileNewLocationHeader({
   apiKeyMissing = false 
 }) {
   return (
-    <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <div className=" bg-white border-b border-gray-200">
       <div className="px-4 py-3">
         {/* Main header */}
         <div className="flex items-center">
