@@ -287,7 +287,7 @@ export default function ViewEmployeePage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-black text-gray-900 mb-4">Personal Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem label="First Name" value={employee.FirstName} />
                 <DetailItem label="Last Name" value={employee.LastName} />
@@ -300,7 +300,7 @@ export default function ViewEmployeePage() {
 
             {/* Contact Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-black text-gray-900 mb-4">Contact Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem label="Email" value={employee.Email} />
                 <DetailItem label="Mobile Number" value={employee.MobileNumber || 'N/A'} />
@@ -310,7 +310,7 @@ export default function ViewEmployeePage() {
 
             {/* Work Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-black text-gray-900 mb-4">Work Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Work Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem label="Employee Code" value={employee.EmployeeCode} />
                 <DetailItem label="Department" value={employee.department?.DepartmentName || 'N/A'} />
@@ -323,7 +323,7 @@ export default function ViewEmployeePage() {
 
             {/* System Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-black text-gray-900 mb-4">System Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem label="User Role" value={employee.UserRole || 'Employee'} />
                 <DetailItem label="Status" value={employee.Status} />
