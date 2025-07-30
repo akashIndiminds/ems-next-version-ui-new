@@ -12,6 +12,7 @@ import MobileEmployeeSelection from '@/components/attendanceManagement/MobileEmp
 import DesktopEmployeeSelection from '@/components/attendanceManagement/DesktopEmployeeSelection';
 import MobileAttendanceDetails from '@/components/attendanceManagement/MobileAttendanceDetails';
 import DesktopAttendanceDetails from '@/components/attendanceManagement/DesktopAttendanceDetails';
+import { AlertCircle } from 'lucide-react';
 
 export default function SetAttendanceStatusPage() {
   const { user } = useAuth();
@@ -343,19 +344,19 @@ export default function SetAttendanceStatusPage() {
         )}
 
         {/* Help Text */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
-            <FiAlertCircle className="mr-2 h-5 w-5" />
-            How to Use
-          </h3>
-          <div className="space-y-2 text-sm text-blue-800">
-            <p>• <strong>Select Employee:</strong> Choose the employee from the dropdown</p>
-            <p>• <strong>Choose Date:</strong> Select the attendance date (cannot be future date)</p>
-            <p>• <strong>View Data:</strong> Click "View Attendance" to load existing data</p>
-            <p>• <strong>Set/Update:</strong> Fill in the times and status, then save</p>
-            <p>• <strong>Delete:</strong> Remove attendance records if needed (admin only)</p>
-          </div>
-        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-6">
+      <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-2 sm:mb-3 flex items-center">
+        <AlertCircle className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+        How to Use
+      </h3>
+      <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-blue-800">
+        <p>• <strong>Select Employee:</strong> Choose from dropdown</p>
+        <p>• <strong>Choose Date:</strong> Select attendance date</p>
+        <p>• <strong>View Data:</strong> Click "View Attendance"</p>
+        <p>• <strong>Set/Update:</strong> Fill times and save</p>
+        <p>• <strong>Delete:</strong> Remove records (admin only)</p>
+      </div>
+    </div>
       </div>
     </div>
   );
