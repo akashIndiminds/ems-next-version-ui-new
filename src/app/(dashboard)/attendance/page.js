@@ -193,7 +193,7 @@ export default function AttendancePage() {
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        deviceId: 1,
+        deviceId: 5,
         remarks: 'Web check-out with location validation',
       });
 

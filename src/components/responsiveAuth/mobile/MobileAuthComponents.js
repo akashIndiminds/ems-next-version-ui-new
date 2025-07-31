@@ -9,7 +9,7 @@ import {
 // Mobile Auth Header
 export const MobileAuthHeader = ({ title, showBack = false, backUrl = "/" }) => {
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 py-3 md:hidden">
+    <header className=" bg-white border-b border-gray-100 px-4 py-3 md:hidden">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           {showBack && (

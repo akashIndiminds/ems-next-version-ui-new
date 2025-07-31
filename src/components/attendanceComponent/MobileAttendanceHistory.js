@@ -1,7 +1,8 @@
 // src/components/attendanceComponent/MobileAttendanceHistory.js
-import { FiCalendar, FiClock, FiFilter, FiX, FiChevronRight, FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiFilter, FiX, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { useState, useMemo } from 'react';
+import { CompactPagination } from '../ui/Pagination';
 
 const MobileAttendanceHistory = ({ 
   attendanceRecords, 
@@ -12,10 +13,17 @@ const MobileAttendanceHistory = ({
 }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [expandedRecord, setExpandedRecord] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 5;
 
-  // Memoize processed records for performance
+  // Calculate pagination
+  const totalPages = Math.ceil(attendanceRecords.length / recordsPerPage);
+  const startIndex = (currentPage - 1) * recordsPerPage;
+  const endIndex = startIndex + recordsPerPage;
+
+  // Memoize processed records for current page
   const processedRecords = useMemo(() => {
-    return attendanceRecords.slice(0, 10).map(record => ({
+    return attendanceRecords.slice(startIndex, endIndex).map(record => ({
       ...record,
       formattedDate: format(new Date(record.AttendanceDate), 'MMM d'),
       formattedDay: format(new Date(record.AttendanceDate), 'EEE'),
@@ -23,7 +31,7 @@ const MobileAttendanceHistory = ({
       checkOutTime: record.CheckOutTime ? timeUtils.formatTimeUTC(record.CheckOutTime) : null,
       workingHours: record.WorkingHours ? timeUtils.formatWorkingHours(record.WorkingHours) : '0h'
     }));
-  }, [attendanceRecords, timeUtils]);
+  }, [attendanceRecords, timeUtils, startIndex, endIndex]);
 
   const toggleFilters = () => setShowFilters(!showFilters);
   
@@ -40,6 +48,18 @@ const MobileAttendanceHistory = ({
     }
   };
 
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setExpandedRecord(null); // Close any expanded records when changing pages
+  };
+
+  // Reset to page 1 when filters change
+  const handleDateRangeChange = (field, value) => {
+    setDateRange({ ...dateRange, [field]: value });
+    setCurrentPage(1);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden md:hidden">
       {/* Compact Header */}
@@ -51,7 +71,12 @@ const MobileAttendanceHistory = ({
             </div>
             <div>
               <h2 className="text-sm font-medium text-gray-900">History</h2>
-              <p className="text-xs text-gray-600">{attendanceRecords.length} records</p>
+              <p className="text-xs text-gray-600">
+                {attendanceRecords.length} records
+                {totalPages > 1 && (
+                  <span className="ml-1">• Page {currentPage} of {totalPages}</span>
+                )}
+              </p>
             </div>
           </div>
           
@@ -75,14 +100,14 @@ const MobileAttendanceHistory = ({
               <input
                 type="date"
                 value={dateRange.fromDate}
-                onChange={(e) => setDateRange({ ...dateRange, fromDate: e.target.value })}
+                onChange={(e) => handleDateRangeChange('fromDate', e.target.value)}
                 className="w-full px-2 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 style={{ fontSize: '16px' }}
               />
               <input
                 type="date"
                 value={dateRange.toDate}
-                onChange={(e) => setDateRange({ ...dateRange, toDate: e.target.value })}
+                onChange={(e) => handleDateRangeChange('toDate', e.target.value)}
                 className="w-full px-2 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 style={{ fontSize: '16px' }}
               />
@@ -160,12 +185,14 @@ const MobileAttendanceHistory = ({
         )}
       </div>
 
-      {/* Compact Load More */}
-      {attendanceRecords.length > 10 && (
-        <div className="p-3 border-t border-gray-100 bg-gray-50">
-          <button className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 hover:bg-blue-50 rounded transition-colors">
-            View all {attendanceRecords.length} records
-          </button>
+      {/* Pagination using existing component */}
+      {totalPages > 1 && (
+        <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
+          <CompactPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
         </div>
       )}
     </div>

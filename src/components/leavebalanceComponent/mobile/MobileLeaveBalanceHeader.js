@@ -61,7 +61,7 @@ const MobileLeaveBalanceHeader = ({
   return (
     <>
       {/* Glassmorphic Header with reduced height */}
-      <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg">
+      <div className=" backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg">
         <div className="px-4 py-4">
           {/* Compact Title Section */}
           <div className="flex items-center justify-between mb-3">

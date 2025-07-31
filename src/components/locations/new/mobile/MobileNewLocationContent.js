@@ -1,3 +1,4 @@
+
 // components/locations/new/mobile/MobileNewLocationContent.js
 "use client";
 
@@ -51,60 +52,64 @@ export default function MobileNewLocationContent({
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Tab Navigation */}
-      <div className="flex bg-white border-b border-gray-200">
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Compact Tab Navigation */}
+      <div className="flex bg-white border-b border-gray-100 sticky top-0 z-40">
         <button
           onClick={() => setActiveTab("search")}
-          className={`flex-1 py-3 px-4 text-sm font-medium ${
+          className={`flex-1 py-2.5 px-3 text-sm font-medium transition-all duration-150 ${
             activeTab === "search"
               ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-              : "text-gray-600"
+              : "text-gray-600 active:bg-gray-50"
           }`}
         >
-          <FiMapPin className="h-4 w-4 inline mr-2" />
-          Search Location
+          <FiMapPin className="h-4 w-4 inline mr-1.5" />
+          Search
         </button>
         <button
           onClick={() => setActiveTab("form")}
-          className={`flex-1 py-3 px-4 text-sm font-medium ${
+          className={`flex-1 py-2.5 px-3 text-sm font-medium transition-all duration-150 ${
             activeTab === "form"
               ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-              : "text-gray-600"
+              : "text-gray-600 active:bg-gray-50"
           }`}
           disabled={!locationSelected && !isEditing}
         >
-          <FiCheck className="h-4 w-4 inline mr-2" />
+          <FiCheck className="h-4 w-4 inline mr-1.5" />
           Details
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
+      <div className="flex-1 overflow-y-auto">
         {activeTab === "search" && (
-          <div className="p-4">
-            {/* API Usage Tracker */}
+          <div className="p-3 space-y-3">
+            {/* Compact API Usage Tracker */}
             {apiCalls && (
-              <ApiUsageTracker 
-                apiCalls={apiCalls}
-                dailyLimit={1000}
-              />
+              <div className="bg-white rounded-lg border border-gray-100 p-2">
+                <ApiUsageTracker 
+                  apiCalls={apiCalls}
+                  dailyLimit={1000}
+                />
+              </div>
             )}
 
             {/* Google Maps Search Component */}
-            <GoogleMapsSearch
-              formData={formData}
-              onLocationSelect={onLocationSelect}
-              onApiCallUpdate={onApiCallUpdate || (() => {})}
-              isEditing={isEditing}
-              locationSelected={locationSelected}
-            />
+            <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
+              <GoogleMapsSearch
+                formData={formData}
+                onLocationSelect={onLocationSelect}
+                onApiCallUpdate={onApiCallUpdate || (() => {})}
+                isEditing={isEditing}
+                locationSelected={locationSelected}
+              />
+            </div>
 
             {/* Quick Action Button */}
             {locationSelected && (
               <button
                 onClick={() => setActiveTab("form")}
-                className="w-full mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-medium transition-all duration-200 active:scale-95 flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-lg font-medium transition-all duration-200 active:scale-[0.98] flex items-center justify-center shadow-sm"
               >
                 Continue to Details
                 <FiCheck className="ml-2 h-4 w-4" />
@@ -114,16 +119,18 @@ export default function MobileNewLocationContent({
         )}
 
         {activeTab === "form" && (
-          <form onSubmit={handleSubmit} className="p-4 space-y-4">
-            {/* Location Info */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                <FiEdit3 className="h-4 w-4 mr-2 text-blue-600" />
-                Location Information
-              </h3>
+          <form onSubmit={handleSubmit} className="p-3 space-y-3 pb-20">
+            {/* Compact Location Info Card */}
+            <div className="bg-white rounded-lg border border-gray-100 p-3">
+              <div className="flex items-center mb-2">
+                <FiEdit3 className="h-4 w-4 mr-1.5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900 text-sm">Location Information</h3>
+              </div>
+              
               <div className="space-y-3">
+                {/* Location Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     Location Name *
                   </label>
                   <input
@@ -131,12 +138,14 @@ export default function MobileNewLocationContent({
                     required
                     value={formData.locationName}
                     onChange={(e) => handleInputChange("locationName", e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     placeholder="Office Name"
                   />
                 </div>
+
+                {/* Location Code with Generator */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     Location Code *
                   </label>
                   <div className="relative">
@@ -145,7 +154,7 @@ export default function MobileNewLocationContent({
                       required
                       value={formData.locationCode}
                       onChange={(e) => handleInputChange("locationCode", e.target.value.toUpperCase())}
-                      className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg text-black"
+                      className="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       placeholder="LOC001"
                       maxLength="8"
                     />
@@ -155,64 +164,72 @@ export default function MobileNewLocationContent({
                         const newCode = generateLocationCode(formData.locationName || formData.address);
                         handleInputChange('locationCode', newCode);
                       }}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-blue-600 hover:text-blue-800 rounded-lg hover:bg-blue-50"
-                      title="Regenerate Code"
+                      className="absolute right-1.5 top-1/2 transform -translate-y-1/2 p-1.5 text-blue-600 hover:text-blue-800 rounded-md hover:bg-blue-50 transition-all active:scale-95"
+                      title="Generate Code"
                     >
-                      <FiRefreshCw className="h-4 w-4" />
+                      <FiRefreshCw className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Geofence Radius (meters) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="10"
-                    max="5000"
-                    value={formData.allowedRadius}
-                    onChange={(e) => handleInputChange("allowedRadius", e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location Type
-                  </label>
-                  <select
-                    value={formData.locationType}
-                    onChange={(e) => handleInputChange("locationType", e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
-                  >
-                    <option value="office">Office</option>
-                    <option value="warehouse">Warehouse</option>
-                    <option value="site">Site/Factory</option>
-                    <option value="other">Other</option>
-                  </select>
+
+                {/* Compact Grid for Radius and Type */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Radius (m) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="10"
+                      max="5000"
+                      value={formData.allowedRadius}
+                      onChange={(e) => handleInputChange("allowedRadius", e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Type
+                    </label>
+                    <select
+                      value={formData.locationType}
+                      onChange={(e) => handleInputChange("locationType", e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="office">Office</option>
+                      <option value="warehouse">Warehouse</option>
+                      <option value="site">Site/Factory</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Address Details */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Address Details</h3>
+            {/* Compact Address Details Card */}
+            <div className="bg-white rounded-lg border border-gray-100 p-3">
+              <h3 className="font-semibold text-gray-900 text-sm mb-2">Address Details</h3>
+              
               <div className="space-y-3">
+                {/* Full Address - Compact textarea */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     Full Address
                   </label>
                   <textarea
                     value={formData.address}
                     onChange={(e) => handleInputChange("address", e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
-                    rows="3"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    rows="2"
                     placeholder="Complete address"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+
+                {/* Compact Lat/Long Grid */}
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
                       Latitude *
                     </label>
                     <input
@@ -221,12 +238,12 @@ export default function MobileNewLocationContent({
                       required
                       value={formData.latitude}
                       onChange={(e) => handleInputChange("latitude", e.target.value)}
-                      className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       placeholder="0.000000"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
                       Longitude *
                     </label>
                     <input
@@ -235,43 +252,47 @@ export default function MobileNewLocationContent({
                       required
                       value={formData.longitude}
                       onChange={(e) => handleInputChange("longitude", e.target.value)}
-                      className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       placeholder="0.000000"
                     />
                   </div>
                 </div>
+
+                {/* City - Full width */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     City
                   </label>
                   <input
                     type="text"
                     value={formData.city}
                     onChange={(e) => handleInputChange("city", e.target.value)}
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+
+                {/* Compact State/Country Grid */}
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
                       State
                     </label>
                     <input
                       type="text"
                       value={formData.state}
                       onChange={(e) => handleInputChange("state", e.target.value)}
-                      className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
                       Country
                     </label>
                     <input
                       type="text"
                       value={formData.country}
                       onChange={(e) => handleInputChange("country", e.target.value)}
-                      className="w-full px-3 py-3 border border-gray-300 rounded-lg text-black"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -281,31 +302,31 @@ export default function MobileNewLocationContent({
         )}
       </div>
 
-      {/* Bottom Action Bar */}
+      {/* Compact Bottom Action Bar */}
       {(activeTab === "form" || (activeTab === "search" && locationSelected)) && (
-        <div className="bg-white border-t border-gray-200 p-4">
-          <div className="flex space-x-3">
+        <div className="bg-white border-t border-gray-100 p-3 safe-area-bottom">
+          <div className="flex space-x-2">
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium transition-all duration-200 active:scale-95"
+              className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 active:scale-[0.98] active:bg-gray-200"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={loading || !formData.locationName || !formData.locationCode || !locationSelected}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-medium transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
             >
               {loading ? (
                 <>
-                  <FiLoader className="animate-spin h-4 w-4 mr-2" />
+                  <FiLoader className="animate-spin h-4 w-4 mr-1.5" />
                   {isEditing ? "Updating..." : "Creating..."}
                 </>
               ) : (
                 <>
-                  <FiSave className="h-4 w-4 mr-2" />
-                  {isEditing ? "Update Location" : "Create Location"}
+                  <FiSave className="h-4 w-4 mr-1.5" />
+                  {isEditing ? "Update" : "Create"}
                 </>
               )}
             </button>

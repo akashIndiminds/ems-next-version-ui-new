@@ -15,53 +15,103 @@ export default function MobileLocationStats({ locations }) {
       icon: FiMapPin,
       value: totalLocations,
       label: "Total",
-      color: "blue",
-      bgFrom: "from-blue-100",
-      bgTo: "to-blue-200",
-      textColor: "text-blue-600"
+      color: "bg-blue-500",
+      lightBg: "bg-blue-50"
     },
     {
       icon: FiCheckCircle,
       value: activeLocations,
       label: "Active",
-      color: "green",
-      bgFrom: "from-green-100",
-      bgTo: "to-green-200",
-      textColor: "text-green-600"
+      color: "bg-green-500",
+      lightBg: "bg-green-50"
     },
     {
       icon: FiActivity,
       value: `${avgRadius}m`,
-      label: "Avg Radius",
-      color: "purple",
-      bgFrom: "from-purple-100",
-      bgTo: "to-purple-200",
-      textColor: "text-purple-600"
+      label: "Radius",
+      color: "bg-purple-500",
+      lightBg: "bg-purple-50"
     }
   ];
 
-  return (
-    <div className="px-4 py-3">
-      {/* Horizontal scrollable stats */}
-      <div className="flex space-x-4 overflow-x-auto scrollbar-hide pb-2">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={index}
-              className="flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 p-4 min-w-[120px]"
-            >
-              <div className="flex flex-col items-center">
-                <div className={`h-10 w-10 rounded-lg bg-gradient-to-br ${stat.bgFrom} ${stat.bgTo} flex items-center justify-center mb-2`}>
-                  <Icon className={`h-5 w-5 ${stat.textColor}`} />
+  // Option 1: Horizontal compact cards
+  const HorizontalStats = () => (
+    <div className="px-4 py-2">
+      <div className="bg-white rounded-lg border border-gray-200 p-3">
+        <div className="grid grid-cols-3 gap-3">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div key={index} className="text-center">
+                <div className={`inline-flex h-8 w-8 rounded-full ${stat.lightBg} items-center justify-center mb-1`}>
+                  <Icon className={`h-4 w-4 ${stat.color.replace('bg-', 'text-')}`} />
                 </div>
-                <div className="text-xl font-bold text-gray-900">{stat.value}</div>
-                <div className="text-xs text-gray-600 text-center">{stat.label}</div>
+                <div className="text-lg font-bold text-gray-900">{stat.value}</div>
+                <div className="text-xs text-gray-600">{stat.label}</div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
+
+  // Option 2: Inline single row
+  const InlineStats = () => (
+    <div className="px-4 py-2">
+      <div className="bg-white rounded-lg border border-gray-200 p-3">
+        <div className="flex items-center justify-between">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div key={index} className="flex items-center space-x-2">
+                <div className={`h-6 w-6 rounded ${stat.color} flex items-center justify-center`}>
+                  <Icon className="h-3 w-3 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-gray-900">{stat.value}</span>
+                  <span className="text-xs text-gray-600">{stat.label}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Option 3: Header style with dots
+  const HeaderStats = () => (
+    <div className="px-4 py-2 bg-gray-50">
+      <div className="flex items-center justify-center space-x-6">
+        {stats.map((stat, index) => (
+          <div key={index} className="flex items-center space-x-1">
+            <div className={`h-2 w-2 rounded-full ${stat.color}`}></div>
+            <span className="text-sm font-medium text-gray-700">
+              {stat.value} <span className="text-gray-500">{stat.label}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Option 4: Minimal badges
+  const BadgeStats = () => (
+    <div className="px-4 py-2">
+      <div className="flex items-center justify-center space-x-2">
+        {stats.map((stat, index) => (
+          <div key={index} className={`${stat.lightBg} px-3 py-1 rounded-full border`}>
+            <span className="text-sm font-semibold text-gray-800">
+              {stat.value}
+            </span>
+            <span className="text-xs text-gray-600 ml-1">{stat.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Return the compact horizontal version (change this to test different options)
+  return <HorizontalStats />;
 }
