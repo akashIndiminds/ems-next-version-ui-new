@@ -1,13 +1,18 @@
 // src/components/dashboard/DesktopAttendanceStatus.js
 import { FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 const DesktopAttendanceStatus = ({ 
   todayStatus, 
+  userLocation,
   timeUtils, 
   currentTime, 
   handleCheckIn, 
   handleCheckOut,
-  getLiveWorkingHours 
+  getLiveWorkingHours,
+  checkInLoading,
+  checkOutLoading,
+  gettingLocation
 }) => {
   const liveWorkingHours = getLiveWorkingHours();
 
@@ -75,10 +80,11 @@ const DesktopAttendanceStatus = ({
                   {liveWorkingHours ? 'Current Working Hours' : 'Total Working Hours'}
                 </div>
                 <div className="text-2xl font-bold text-blue-900 mb-2">
-                  {todayStatus.CheckInTime && todayStatus.CheckOutTime 
-                    ? `${timeUtils.calculateWorkingHours(todayStatus.CheckInTime, todayStatus.CheckOutTime)}h`
-                    : liveWorkingHours 
-                      ? `${liveWorkingHours}h`
+                  {liveWorkingHours ? timeUtils.formatWorkingHours(liveWorkingHours) :
+                   todayStatus.CheckInTime && todayStatus.CheckOutTime 
+                    ? timeUtils.calculateWorkingHours(todayStatus.CheckInTime, todayStatus.CheckOutTime)
+                    : todayStatus.CheckInTime 
+                      ? timeUtils.calculateWorkingHours(todayStatus.CheckInTime, currentTime.toISOString())
                       : '--'
                   }
                 </div>
@@ -96,7 +102,8 @@ const DesktopAttendanceStatus = ({
                 <div className="text-center">
                   <div className="text-sm font-medium text-blue-700 mb-2">Time since check-in</div>
                   <div className="text-3xl font-bold text-blue-900 mb-2">
-                    {timeUtils.formatTimeDifference(todayStatus.CheckInTime, currentTime.toISOString())}
+                    {liveWorkingHours ? timeUtils.formatWorkingHours(liveWorkingHours) : 
+                     timeUtils.calculateWorkingHours(todayStatus.CheckInTime, currentTime.toISOString())}
                   </div>
                   <div className="flex items-center justify-center">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2"></div>
@@ -108,25 +115,32 @@ const DesktopAttendanceStatus = ({
 
             {/* Action Buttons */}
             <div className="flex justify-center space-x-4">
-              {!todayStatus.CheckInTime ? (
+              {!userLocation || !userLocation.hasCoordinates ? (
+                <div className="flex items-center text-amber-700 bg-amber-50 px-8 py-4 rounded-xl border border-amber-200 font-medium text-lg">
+                  <AlertTriangle className="mr-3 text-amber-600 h-5 w-5" />
+                  <span>Location setup required</span>
+                </div>
+              ) : !todayStatus.CheckInTime ? (
                 <button
                   onClick={handleCheckIn}
-                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-8 py-4 rounded-xl hover:from-emerald-700 hover:to-emerald-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-lg"
+                  disabled={checkInLoading || gettingLocation}
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-8 py-4 rounded-xl hover:from-emerald-700 hover:to-emerald-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-lg disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   <FiCheckCircle className="mr-3 h-5 w-5" />
-                  Check In Now
+                  {checkInLoading ? 'Checking In...' : gettingLocation ? 'Verifying Location...' : 'Check In Now'}
                 </button>
               ) : !todayStatus.CheckOutTime ? (
                 <button
                   onClick={handleCheckOut}
-                  className="bg-gradient-to-r from-rose-600 to-rose-700 text-white px-8 py-4 rounded-xl hover:from-rose-700 hover:to-rose-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-lg"
+                  disabled={checkOutLoading || gettingLocation}
+                  className="bg-gradient-to-r from-rose-600 to-rose-700 text-white px-8 py-4 rounded-xl hover:from-rose-700 hover:to-rose-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-lg disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   <FiXCircle className="mr-3 h-5 w-5" />
-                  Check Out Now
+                  {checkOutLoading ? 'Checking Out...' : gettingLocation ? 'Verifying Location...' : 'Check Out Now'}
                 </button>
               ) : (
                 <div className="flex items-center text-emerald-700 bg-emerald-50 px-8 py-4 rounded-xl border border-emerald-200 font-medium text-lg">
-                  <FiCheckCircle className="mr-3 text-emerald-600 h-5 w-5" />
+                  <CheckCircle className="mr-3 text-emerald-600 h-5 w-5" />
                   <span>Attendance completed for today</span>
                 </div>
               )}
@@ -144,6 +158,10 @@ const DesktopAttendanceStatus = ({
                         {timeUtils.calculateWorkingHours(todayStatus.CheckInTime, todayStatus.CheckOutTime)}h
                       </div>
                     </div>
+                    <div>
+                      <div className="text-green-600 font-medium mb-1">Status</div>
+                      <div className="text-lg font-semibold text-green-900">Completed</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -157,13 +175,22 @@ const DesktopAttendanceStatus = ({
             </div>
             <p className="text-gray-500 text-xl font-medium mb-2">No attendance recorded for today</p>
             <p className="text-sm text-gray-400 mb-8">Start your day by checking in</p>
-            <button
-              onClick={handleCheckIn}
-              className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-8 py-4 rounded-xl hover:from-emerald-700 hover:to-emerald-800 flex items-center mx-auto transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-lg"
-            >
-              <FiCheckCircle className="mr-3 h-5 w-5" />
-              Check In Now
-            </button>
+            
+            {!userLocation || !userLocation.hasCoordinates ? (
+              <div className="flex items-center text-amber-700 bg-amber-50 px-8 py-4 rounded-xl border border-amber-200 font-medium text-lg justify-center mx-auto max-w-sm">
+                <AlertTriangle className="mr-3 text-amber-600 h-5 w-5" />
+                <span>Location setup required</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleCheckIn}
+                disabled={checkInLoading || gettingLocation}
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-8 py-4 rounded-xl hover:from-emerald-700 hover:to-emerald-800 flex items-center mx-auto transition-all duration-200 shadow-lg hover:shadow-xl font-medium text-lg disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <FiCheckCircle className="mr-3 h-5 w-5" />
+                {checkInLoading ? 'Checking In...' : gettingLocation ? 'Verifying Location...' : 'Check In Now'}
+              </button>
+            )}
           </div>
         )}
       </div>

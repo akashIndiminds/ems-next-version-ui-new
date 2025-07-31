@@ -9,15 +9,16 @@ import toast from 'react-hot-toast';
 import { DeleteAlert } from '@/components/ui/AlertDialog';
 
 // Mobile Components
-import MobileEmployeesHeader from '@/components/employees/mobile/MobileEmployeesHeader';
-import MobileEmployeesFilters from '@/components/employees/mobile/MobileEmployeesFilters';
-import MobileEmployeesContent from '@/components/employees/mobile/MobileEmployeesContent';
+import MobileEmployeesHeader from '@/components/employees/mainpage/mobile/MobileEmployeesHeader';
+import MobileEmployeesFilters from '@/components/employees/mainpage/mobile/MobileEmployeesFilters';
+import MobileEmployeesContent from '@/components/employees/mainpage/mobile/MobileEmployeesContent';
+import MobileEmployeesStats from '@/components/employees/mainpage/mobile/MobileEmployeesStats';
 
 // Desktop Components
-import DesktopEmployeesHeader from '@/components/employees/desktop/DesktopEmployeesHeader';
-import DesktopEmployeesFilters from '@/components/employees/desktop/DesktopEmployeesFilters';
-import DesktopEmployeesStats from '@/components/employees/desktop/DesktopEmployeesStats';
-import DesktopEmployeesTable from '@/components/employees/desktop/DesktopEmployeesTable';
+import DesktopEmployeesHeader from '@/components/employees/mainpage/desktop/DesktopEmployeesHeader';
+import DesktopEmployeesFilters from '@/components/employees/mainpage/desktop/DesktopEmployeesFilters';
+import DesktopEmployeesStats from '@/components/employees/mainpage/desktop/DesktopEmployeesStats';
+import DesktopEmployeesTable from '@/components/employees/mainpage/desktop/DesktopEmployeesTable';
 
 export default function ResponsiveEmployeesPage() {
   const { user } = useAuth();

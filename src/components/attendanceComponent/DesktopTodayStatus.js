@@ -1,5 +1,19 @@
 // src/components/attendanceComponent/DesktopTodayStatus.js
 import { format } from 'date-fns';
+import { 
+  FiChevronsRight, 
+  FiPauseCircle, 
+  FiPlayCircle, 
+  FiTablet,
+  FiTarget,
+  FiPlay,
+  FiPause,
+  FiClock,
+  FiTrendingUp,
+  FiChevronRight,
+  FiAlertTriangle,
+  FiCheckCircle
+} from 'react-icons/fi';
 
 const DesktopTodayStatus = ({ 
   todayStatus, 
@@ -9,15 +23,7 @@ const DesktopTodayStatus = ({
   checkInLoading, 
   checkOutLoading, 
   gettingLocation, 
-  timeUtils,
-  FiTarget,
-  FiPlay,
-  FiPause,
-  FiClock,
-  FiTrendingUp,
-  FiChevronRight,
-  FiAlertTriangle,
-  FiCheckCircle
+  timeUtils
 }) => {
   return (
     <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-6">
@@ -34,7 +40,7 @@ const DesktopTodayStatus = ({
         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-4 lg:p-5 border border-blue-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <FiTarget className="h-6 w-6 text-white" />
+              <FiTablet className="h-6 w-6 text-white" />
             </div>
             <div className={`w-3 h-3 rounded-full ${
               todayStatus?.CheckInTime ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
@@ -55,9 +61,9 @@ const DesktopTodayStatus = ({
         <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl p-4 lg:p-5 border border-emerald-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-              <FiPlay className="h-6 w-6 text-white" />
+              <FiPlayCircle className="h-6 w-6 text-white" />
             </div>
-            <FiChevronRight className="text-emerald-400 h-5 w-5" />
+            <FiChevronsRight className="text-emerald-400 h-5 w-5" />
           </div>
           <h3 className="font-semibold text-gray-900 text-sm mb-2">Check In</h3>
           <div className="text-xl font-bold text-emerald-900 mb-1">
@@ -72,7 +78,7 @@ const DesktopTodayStatus = ({
         <div className="bg-gradient-to-br from-rose-50 to-red-100 rounded-2xl p-4 lg:p-5 border border-rose-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-rose-600 rounded-xl flex items-center justify-center shadow-lg">
-              <FiPause className="h-6 w-6 text-white" />
+              <FiPauseCircle className="h-6 w-6 text-white" />
             </div>
             <FiChevronRight className="text-rose-400 h-5 w-5" />
           </div>
@@ -137,7 +143,7 @@ const DesktopTodayStatus = ({
             disabled={checkOutLoading || gettingLocation}
             className="bg-gradient-to-r from-rose-600 to-rose-700 text-white px-8 py-4 rounded-xl hover:from-rose-700 hover:to-rose-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 font-medium text-lg"
           >
-            <FiPause className="mr-3 h-5 w-5" />
+            <FiPauseCircle className="mr-3 h-5 w-5" />
             {checkOutLoading ? 'Checking Out...' : gettingLocation ? 'Verifying Location...' : 'Check Out'}
           </button>
         ) : (

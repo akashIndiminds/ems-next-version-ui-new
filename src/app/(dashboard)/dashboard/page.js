@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { companyAPI, attendanceAPI } from '@/app/lib/api';
+import { locationAPI } from '@/app/lib/api/locationAPI';
 import timeUtils from '@/app/lib/utils/timeUtils';
 import { FiRefreshCw, FiActivity, FiClock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -25,6 +26,15 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [recentActivities, setRecentActivities] = useState([]);
+
+  // Location validation states (same as attendance page)
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [locationValidation, setLocationValidation] = useState(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkOutLoading, setCheckOutLoading] = useState(false);
+
+  const userLocation = user?.assignedLocation;
 
   // Update current time every minute for live working hours calculation
   useEffect(() => {
@@ -138,6 +148,91 @@ export default function DashboardPage() {
     }
   };
 
+  // Location validation functions (copied from attendance page)
+  const getCurrentLocation = async () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser'));
+        return;
+      }
+
+      setGettingLocation(true);
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          };
+          setCurrentLocation(location);
+          setGettingLocation(false);
+          resolve(location);
+        },
+        (error) => {
+          setGettingLocation(false);
+          let message = 'Failed to get location';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              message = 'Location permission denied. Please enable location access.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              message = 'Location information is unavailable.';
+              break;
+            case error.TIMEOUT:
+              message = 'Location request timed out.';
+              break;
+          }
+          reject(new Error(message));
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        }
+      );
+    });
+  };
+
+  const validateLocation = async () => {
+    try {
+      if (!userLocation) {
+        toast.error('No location assigned to your account');
+        return null;
+      }
+
+      if (!userLocation.hasCoordinates) {
+        toast.error('Your assigned location needs coordinate setup');
+        return null;
+      }
+
+      const position = await getCurrentLocation();
+
+      const response = await locationAPI.validateLocation(
+        userLocation.locationId,
+        position.latitude,
+        position.longitude,
+        user.employeeId
+      );
+
+      console.log('🔍 Location validation response:', response.data);
+      setLocationValidation(response.data);
+
+      if (response.data.success) {
+        toast.success(`✅ Location verified! Distance: ${response.data.data.distance}m from ${response.data.data.locationName}`);
+        return position;
+      } else {
+        toast.error(`❌ ${response.data.message}`);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Location validation error:', error);
+      toast.error(error.message);
+      return null;
+    }
+  };
+
+  // Updated handleCheckIn with location validation
   const handleCheckIn = async () => {
     if (!user) {
       toast.error('User not found');
@@ -145,6 +240,14 @@ export default function DashboardPage() {
     }
 
     try {
+      setCheckInLoading(true);
+
+      // Validate location first
+      const position = await validateLocation();
+      if (!position) {
+        return;
+      }
+
       let employeeId = user.employeeId;
       if (Array.isArray(employeeId)) {
         employeeId = employeeId[0];
@@ -152,20 +255,26 @@ export default function DashboardPage() {
 
       const response = await attendanceAPI.checkIn({
         employeeId: employeeId,
-        locationId: user.locationId || 1,
-        remarks: 'Check-in from dashboard'
+        locationId: userLocation.locationId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        deviceId: 5,
+        remarks: 'Dashboard check-in with location validation'
       });
 
       if (response.data.success) {
-        toast.success('Checked in successfully!');
+        toast.success('✅ Checked in successfully!');
         fetchDashboardData(true);
       }
     } catch (error) {
-      console.error('Check-in error:', error);
+      console.error('❌ Check-in error:', error);
       toast.error(error.response?.data?.message || 'Failed to check in');
+    } finally {
+      setCheckInLoading(false);
     }
   };
 
+  // Updated handleCheckOut with location validation
   const handleCheckOut = async () => {
     if (!user) {
       toast.error('User not found');
@@ -173,6 +282,14 @@ export default function DashboardPage() {
     }
 
     try {
+      setCheckOutLoading(true);
+
+      // Validate location first
+      const position = await validateLocation();
+      if (!position) {
+        return;
+      }
+
       let employeeId = user.employeeId;
       if (Array.isArray(employeeId)) {
         employeeId = employeeId[0];
@@ -180,17 +297,22 @@ export default function DashboardPage() {
 
       const response = await attendanceAPI.checkOut({
         employeeId: employeeId,
-        locationId: user.locationId || 1,
-        remarks: 'Check-out from dashboard'
+        locationId: userLocation.locationId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        deviceId: 1,
+        remarks: 'Dashboard check-out with location validation'
       });
 
       if (response.data.success) {
-        toast.success('Checked out successfully!');
+        toast.success('✅ Checked out successfully!');
         fetchDashboardData(true);
       }
     } catch (error) {
-      console.error('Check-out error:', error);
+      console.error('❌ Check-out error:', error);
       toast.error(error.response?.data?.message || 'Failed to check out');
+    } finally {
+      setCheckOutLoading(false);
     }
   };
 
@@ -238,30 +360,30 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 sm:p-6 space-y-6">
         {/* Header */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 md:gap-6">
-      <div className="flex-1">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm md:text-base text-gray-600 leading-relaxed">
-          Welcome back, {user.fullName}! Here's what's happening today.
-        </p>
-        <div className="mt-2 text-xs md:text-sm text-gray-500">
-          {timeUtils.formatDateTime(new Date().toISOString())}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 md:gap-6">
+          <div className="flex-1">
+            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="mt-1 text-sm md:text-base text-gray-600 leading-relaxed">
+              Welcome back, {user.fullName}! Here's what's happening today.
+            </p>
+            <div className="mt-2 text-xs md:text-sm text-gray-500">
+              {timeUtils.formatDateTime(new Date().toISOString())}
+            </div>
+          </div>
+          
+          <div className="flex-shrink-0 md:mt-0">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 font-medium text-sm md:text-base"
+            >
+              <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
-      </div>
-      
-      <div className="flex-shrink-0 md:mt-0">
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 font-medium text-sm md:text-base"
-        >
-          <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
-      </div>
-    </div>
 
         {/* Today's Attendance Status - Mobile Version */}
         <MobileAttendanceStatus 
@@ -271,6 +393,9 @@ export default function DashboardPage() {
           handleCheckIn={handleCheckIn}
           handleCheckOut={handleCheckOut}
           getLiveWorkingHours={getLiveWorkingHours}
+          checkInLoading={checkInLoading}
+          checkOutLoading={checkOutLoading}
+          gettingLocation={gettingLocation}
         />
 
         {/* Today's Attendance Status - Desktop Version */}
@@ -281,6 +406,9 @@ export default function DashboardPage() {
           handleCheckIn={handleCheckIn}
           handleCheckOut={handleCheckOut}
           getLiveWorkingHours={getLiveWorkingHours}
+          checkInLoading={checkInLoading}
+          checkOutLoading={checkOutLoading}
+          gettingLocation={gettingLocation}
         />
 
         {/* Stats Grid - Mobile Version */}
