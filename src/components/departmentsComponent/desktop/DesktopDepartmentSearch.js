@@ -1,4 +1,4 @@
-// src/components/departments/DesktopDepartmentSearch.js
+// src/components/departments/desktop/DesktopDepartmentSearch.js
 import { FiSearch, FiX, FiGrid, FiList } from 'react-icons/fi';
 
 const DesktopDepartmentSearch = ({ 

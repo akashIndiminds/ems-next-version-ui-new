@@ -9,13 +9,16 @@ import { MdBusiness } from 'react-icons/md';
 import toast from 'react-hot-toast';
 
 // Import responsive components
-import MobileDepartmentSearch from '@/components/departmentsComponent/MobileDepartmentSearch';
-import DesktopDepartmentSearch from '@/components/departmentsComponent/DesktopDepartmentSearch';
-import MobileDepartmentCards from '@/components/departmentsComponent/MobileDepartmentCards';
-import MobileDepartmentList from '@/components/departmentsComponent/MobileDepartmentList';
-import DesktopDepartmentContent from '@/components/departmentsComponent/DesktopDepartmentContent';
-import MobilePagination from '@/components/departmentsComponent/MobilePagination';
-import DesktopPagination from '@/components/departmentsComponent/DesktopPagination';
+import MobileDepartmentSearch from '@/components/departmentsComponent/mobile/MobileDepartmentSearch';
+import MobileDepartmentCards from '@/components/departmentsComponent/mobile/MobileDepartmentCards';
+import MobileDepartmentList from '@/components/departmentsComponent/mobile/MobileDepartmentList';
+import MobilePagination from '@/components/departmentsComponent/mobile/MobilePagination';
+import MobileDepartmentHeader from '@/components/departmentsComponent/mobile/MobileDepartmentHeader';
+
+import DesktopDepartmentSearch from '@/components/departmentsComponent/desktop/DesktopDepartmentSearch';
+import DesktopDepartmentContent from '@/components/departmentsComponent/desktop/DesktopDepartmentContent';
+import DesktopPagination from '@/components/departmentsComponent/desktop/DesktopPagination';
+import DesktopDepartmentHeader from '@/components/departmentsComponent/desktop/DesktopDepartmentHeader';
 
 export default function DepartmentsPage() {
   const { user } = useAuth();
@@ -33,7 +36,7 @@ export default function DepartmentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6); // 6 cards per page
-  const [viewMode, setViewMode] = useState('card'); // 'card', 'list', or 'table'
+  const [viewMode, setViewMode] = useState('list'); // 'card', 'list', or 'table'
 
   // Auto-detect currency based on user location
   const currencySymbol = useMemo(() => {
@@ -174,27 +177,21 @@ export default function DepartmentsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Department Management
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Manage your organization's departments
-            </p>
-          </div>
-          {user.role === 'admin' && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-            >
-              <FiPlus className="mr-2 h-4 w-4" />
-              Add Department
-            </button>
-          )}
-        </div>
+       {/* Header - Mobile Version (hidden on desktop) */}
+<div className="block sm:hidden">
+  <MobileDepartmentHeader 
+    userRole={user.role}
+    onAddClick={() => setShowAddModal(true)}
+  />
+</div>
 
+{/* Header - Desktop Version (hidden on mobile) */}
+<div className="hidden sm:block">
+  <DesktopDepartmentHeader 
+    userRole={user.role}
+    onAddClick={() => setShowAddModal(true)}
+  />
+</div>
         {/* Search and View Controls - Mobile Version */}
         <MobileDepartmentSearch 
           searchTerm={searchTerm}

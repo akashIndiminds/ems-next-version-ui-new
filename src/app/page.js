@@ -12,7 +12,7 @@ import {
   MobileTestimonials,
   MobileCTA,
   MobileFooter
-} from '@/components/mainlayout/mobile/MobileHeader';
+} from '@/components/mainlayout/mobile/MobileComponents';
 
 
 // Import Desktop Components

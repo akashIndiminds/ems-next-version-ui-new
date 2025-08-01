@@ -1,8 +1,8 @@
-// src/components/departments/DesktopDepartmentContent.js
+// src/components/departments/desktop/DesktopDepartmentContent.js
 import { useState } from 'react';
 import { FiUsers, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { MdBusiness } from 'react-icons/md';
-import { DeleteAlert } from '../ui/AlertDialog';
+import { DeleteAlert } from '@/components/ui/AlertDialog';
 
 const DesktopDepartmentContent = ({ 
   departments, 

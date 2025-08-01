@@ -1,4 +1,4 @@
-// src/components/departments/DesktopPagination.js
+// src/components/departments/desktop/DesktopPagination.js
 
 const DesktopPagination = ({ 
   currentPage, 

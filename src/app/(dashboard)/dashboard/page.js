@@ -10,12 +10,15 @@ import { FiRefreshCw, FiActivity, FiClock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 // Import responsive components
-import MobileDashboardStats from '@/components/dashboard/MobileDashboardStats';
-import DesktopDashboardStats from '@/components/dashboard/DesktopDashboardStats';
-import MobileAttendanceStatus from '@/components/dashboard/MobileAttendanceStatus';
-import DesktopAttendanceStatus from '@/components/dashboard/DesktopAttendanceStatus';
-import MobileDashboardChart from '@/components/dashboard/MobileDashboardChart';
-import DesktopDashboardChart from '@/components/dashboard/DesktopDashboardChart';
+import MobileDashboardStats from '@/components/dashboard/mobile/MobileDashboardStats';
+import MobileAttendanceStatus from '@/components/dashboard/mobile/MobileAttendanceStatus';
+import MobileDashboardHeader from '@/components/dashboard/mobile/MobileDashboardHeader';
+import MobileDashboardChart from '@/components/dashboard/mobile/MobileDashboardChart';
+
+import DesktopDashboardStats from '@/components/dashboard/dekstop/DesktopDashboardStats';
+import DesktopAttendanceStatus from '@/components/dashboard/dekstop/DesktopAttendanceStatus';
+import DesktopDashboardChart from '@/components/dashboard/dekstop/DesktopDashboardChart';
+import DesktopDashboardHeader from '@/components/dashboard/dekstop/DesktopDashboardHeader';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -360,30 +363,24 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 sm:p-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 md:gap-6">
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Dashboard
-            </h1>
-            <p className="mt-1 text-sm md:text-base text-gray-600 leading-relaxed">
-              Welcome back, {user.fullName}! Here's what's happening today.
-            </p>
-            <div className="mt-2 text-xs md:text-sm text-gray-500">
-              {timeUtils.formatDateTime(new Date().toISOString())}
-            </div>
-          </div>
-          
-          <div className="flex-shrink-0 md:mt-0">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 font-medium text-sm md:text-base"
-            >
-              <FiRefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
+       <div className="block md:hidden">
+  <MobileDashboardHeader 
+    user={user}
+    timeUtils={timeUtils}
+    handleRefresh={handleRefresh}
+    refreshing={refreshing}
+  />
+</div>
+
+{/* Header - Desktop Version (hidden on mobile) */}
+<div className="hidden md:block">
+  <DesktopDashboardHeader 
+    user={user}
+    timeUtils={timeUtils}
+    handleRefresh={handleRefresh}
+    refreshing={refreshing}
+  />
+</div>
 
         {/* Today's Attendance Status - Mobile Version */}
         <MobileAttendanceStatus 

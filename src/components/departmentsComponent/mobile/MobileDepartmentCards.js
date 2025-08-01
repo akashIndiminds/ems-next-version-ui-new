@@ -1,4 +1,4 @@
-// src/components/departments/MobileDepartmentCards.js
+// src/components/departments/mobile/MobileDepartmentCards.js
 import { FiUsers, FiEdit, FiTrash2, FiMoreVertical } from 'react-icons/fi';
 import { MdBusiness } from 'react-icons/md';
 import { useState } from 'react';
@@ -50,61 +50,65 @@ const MobileDepartmentCards = ({
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden md:hidden">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <MdBusiness className="mr-2 text-purple-600 h-5 w-5" />
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden md:hidden">
+        {/* Header - Professional & Compact */}
+        <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50">
+          <h2 className="text-base font-semibold text-slate-900 flex items-center">
+            <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+              <MdBusiness className="h-4 w-4 text-blue-600" />
+            </div>
             Departments
           </h2>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="p-3 space-y-3">
           {departments.map((department) => (
             <div 
               key={department.DepartmentID} 
-              className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow duration-200"
+              className="bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md hover:border-slate-300 transition-all duration-200"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                    <MdBusiness className="h-5 w-5 text-blue-600" />
+              {/* Header - Optimized Layout */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start space-x-3 flex-1 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <MdBusiness className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-sm truncate">
+                    <h3 className="font-semibold text-slate-900 text-sm leading-tight truncate mb-1">
                       {department.DepartmentName}
                     </h3>
-                    <p className="text-xs text-gray-500">
-                      Code: {department.DepartmentCode}
-                    </p>
+                    <div className="flex items-center text-xs text-slate-500">
+                      <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-medium">
+                        {department.DepartmentCode}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
                 {userRole === 'admin' && (
-                  <div className="relative">
+                  <div className="relative flex-shrink-0">
                     <button
                       onClick={() => toggleMenu(department.DepartmentID)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="w-8 h-8 hover:bg-slate-100 rounded-lg transition-colors flex items-center justify-center"
                     >
-                      <FiMoreVertical className="h-4 w-4 text-gray-500" />
+                      <FiMoreVertical className="h-4 w-4 text-slate-500" />
                     </button>
                     
                     {activeMenu === department.DepartmentID && (
-                      <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                      <div className="absolute right-0 top-9 w-32 bg-white rounded-lg shadow-lg border border-slate-200 z-10 py-1">
                         <button
                           onClick={() => {
                             handleEdit(department);
                             setActiveMenu(null);
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center"
                         >
-                          <FiEdit className="mr-2 h-4 w-4" />
+                          <FiEdit className="mr-2 h-4 w-4 text-blue-600" />
                           Edit
                         </button>
                         <button
                           onClick={() => showDeleteDialog(department)}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
                         >
                           <FiTrash2 className="mr-2 h-4 w-4" />
                           Delete
@@ -115,29 +119,29 @@ const MobileDepartmentCards = ({
                 )}
               </div>
 
-              {/* Stats - Horizontal Scroll */}
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {/* Manager */}
-                <div className="bg-gray-50 rounded-lg p-2 min-w-[100px] flex-shrink-0">
-                  <div className="text-xs text-gray-600">Manager</div>
-                  <div className="text-sm font-semibold text-gray-900 truncate">
-                    {department.ManagerName || 'Not Assigned'}
-                  </div>
+              {/* Manager Info - Compact */}
+              <div className="mb-3">
+                <div className="text-xs text-slate-500 mb-1 font-medium">Manager</div>
+                <div className="text-sm text-slate-900 font-medium">
+                  {department.ManagerName || 'Not Assigned'}
                 </div>
+              </div>
 
-                {/* Employees */}
-                <div className="bg-blue-50 rounded-lg p-2 min-w-[80px] flex-shrink-0 border border-blue-100">
-                  <div className="text-xs text-blue-600">Employees</div>
-                  <div className="text-sm font-semibold text-blue-900 flex items-center">
-                    <FiUsers className="mr-1 h-3 w-3" />
+              {/* Stats - Professional Grid Layout */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-blue-50 rounded-lg p-2.5 border border-blue-100">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-xs text-blue-600 font-medium">Employees</div>
+                    <FiUsers className="h-3 w-3 text-blue-500" />
+                  </div>
+                  <div className="text-lg font-bold text-blue-900">
                     {department.TotalEmployees || 0}
                   </div>
                 </div>
 
-                {/* Budget */}
-                <div className="bg-emerald-50 rounded-lg p-2 min-w-[90px] flex-shrink-0 border border-emerald-100">
-                  <div className="text-xs text-emerald-600">Budget</div>
-                  <div className="text-sm font-semibold text-emerald-900">
+                <div className="bg-emerald-50 rounded-lg p-2.5 border border-emerald-100">
+                  <div className="text-xs text-emerald-600 font-medium mb-1">Budget</div>
+                  <div className="text-sm font-bold text-emerald-900 leading-tight">
                     {formatCurrency(department.Budget)}
                   </div>
                 </div>
