@@ -1,3 +1,4 @@
+
 // components/locations/mainpage/desktop/DesktopLocationStats.js
 "use client";
 
@@ -16,48 +17,48 @@ export default function DesktopLocationStats({ locations }) {
       value: totalLocations,
       label: "Total Locations",
       color: "blue",
-      bgFrom: "from-blue-100",
-      bgTo: "to-blue-200",
-      textColor: "text-blue-600"
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-600",
+      borderColor: "border-blue-200"
     },
     {
       icon: FiCheckCircle,
       value: activeLocations,
       label: "Active Locations",
       color: "green",
-      bgFrom: "from-green-100",
-      bgTo: "to-green-200",
-      textColor: "text-green-600"
+      bgColor: "bg-emerald-50",
+      iconColor: "text-emerald-600",
+      borderColor: "border-emerald-200"
     },
     {
       icon: FiActivity,
       value: `${avgRadius}m`,
       label: "Avg. Radius",
       color: "purple",
-      bgFrom: "from-purple-100",
-      bgTo: "to-purple-200",
-      textColor: "text-purple-600"
+      bgColor: "bg-purple-50",
+      iconColor: "text-purple-600",
+      borderColor: "border-purple-200"
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
           <div
             key={index}
-            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
+            className={`bg-white rounded-lg shadow-sm p-4 border ${stat.borderColor}`}
           >
             <div className="flex items-center">
-              <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${stat.bgFrom} ${stat.bgTo} flex items-center justify-center`}>
-                <Icon className={`h-6 w-6 ${stat.textColor}`} />
+              <div className={`h-10 w-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
+                <Icon className={`h-5 w-5 ${stat.iconColor}`} />
               </div>
-              <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">
+              <div className="ml-3">
+                <h3 className="text-xl font-bold text-gray-900">
                   {stat.value}
                 </h3>
-                <p className="text-gray-600">{stat.label}</p>
+                <p className="text-gray-600 text-sm">{stat.label}</p>
               </div>
             </div>
           </div>

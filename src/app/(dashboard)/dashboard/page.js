@@ -30,6 +30,9 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [recentActivities, setRecentActivities] = useState([]);
 
+  // Screen size detection
+  const [isMobile, setIsMobile] = useState(false);
+
   // Location validation states (same as attendance page)
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationValidation, setLocationValidation] = useState(null);
@@ -38,6 +41,22 @@ export default function DashboardPage() {
   const [checkOutLoading, setCheckOutLoading] = useState(false);
 
   const userLocation = user?.assignedLocation;
+
+  // Screen size detection effect
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint is 768px
+    };
+
+    // Check on mount
+    checkScreenSize();
+
+    // Add resize listener
+    window.addEventListener('resize', checkScreenSize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Update current time every minute for live working hours calculation
   useEffect(() => {
@@ -360,77 +379,79 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen p-4 bg-gray-50">
       <div className="p-4 sm:p-6 space-y-6">
-        {/* Header */}
-       <div className="block md:hidden">
-  <MobileDashboardHeader 
-    user={user}
-    timeUtils={timeUtils}
-    handleRefresh={handleRefresh}
-    refreshing={refreshing}
-  />
-</div>
+        {/* Header - Conditional Rendering */}
+        {isMobile ? (
+          <MobileDashboardHeader 
+            user={user}
+            timeUtils={timeUtils}
+            handleRefresh={handleRefresh}
+            refreshing={refreshing}
+          />
+        ) : (
+          <DesktopDashboardHeader 
+            user={user}
+            timeUtils={timeUtils}
+            handleRefresh={handleRefresh}
+            refreshing={refreshing}
+          />
+        )}
 
-{/* Header - Desktop Version (hidden on mobile) */}
-<div className="hidden md:block">
-  <DesktopDashboardHeader 
-    user={user}
-    timeUtils={timeUtils}
-    handleRefresh={handleRefresh}
-    refreshing={refreshing}
-  />
-</div>
+        {/* Today's Attendance Status - Conditional Rendering */}
+        {isMobile ? (
+          <MobileAttendanceStatus 
+            todayStatus={todayStatus}
+            userLocation={userLocation} 
+            timeUtils={timeUtils}
+            currentTime={currentTime}
+            handleCheckIn={handleCheckIn}
+            handleCheckOut={handleCheckOut}
+            getLiveWorkingHours={getLiveWorkingHours}
+            checkInLoading={checkInLoading}
+            checkOutLoading={checkOutLoading}
+            gettingLocation={gettingLocation}
+          />
+        ) : (
+          <DesktopAttendanceStatus 
+            todayStatus={todayStatus}
+            timeUtils={timeUtils}
+            userLocation={userLocation} 
+            currentTime={currentTime}
+            handleCheckIn={handleCheckIn}
+            handleCheckOut={handleCheckOut}
+            getLiveWorkingHours={getLiveWorkingHours}
+            checkInLoading={checkInLoading}
+            checkOutLoading={checkOutLoading}
+            gettingLocation={gettingLocation}
+          />
+        )}
 
-        {/* Today's Attendance Status - Mobile Version */}
-        <MobileAttendanceStatus 
-          todayStatus={todayStatus}
-          timeUtils={timeUtils}
-          currentTime={currentTime}
-          handleCheckIn={handleCheckIn}
-          handleCheckOut={handleCheckOut}
-          getLiveWorkingHours={getLiveWorkingHours}
-          checkInLoading={checkInLoading}
-          checkOutLoading={checkOutLoading}
-          gettingLocation={gettingLocation}
-        />
+        {/* Stats Grid - Conditional Rendering */}
+        {isMobile ? (
+          <MobileDashboardStats 
+            stats={stats}
+            userRole={user.role}
+          />
+        ) : (
+          <DesktopDashboardStats 
+            stats={stats}
+            userRole={user.role}
+          />
+        )}
 
-        {/* Today's Attendance Status - Desktop Version */}
-        <DesktopAttendanceStatus 
-          todayStatus={todayStatus}
-          timeUtils={timeUtils}
-          currentTime={currentTime}
-          handleCheckIn={handleCheckIn}
-          handleCheckOut={handleCheckOut}
-          getLiveWorkingHours={getLiveWorkingHours}
-          checkInLoading={checkInLoading}
-          checkOutLoading={checkOutLoading}
-          gettingLocation={gettingLocation}
-        />
-
-        {/* Stats Grid - Mobile Version */}
-        <MobileDashboardStats 
-          stats={stats}
-          userRole={user.role}
-        />
-
-        {/* Stats Grid - Desktop Version */}
-        <DesktopDashboardStats 
-          stats={stats}
-          userRole={user.role}
-        />
-
-        {/* Attendance Chart - Mobile Version */}
-        {/* <MobileDashboardChart 
-          chartData={chartData}
-          userRole={user.role}
-        /> */}
-
-        {/* Attendance Chart - Desktop Version */}
-        <DesktopDashboardChart 
-          chartData={chartData}
-          userRole={user.role}
-        />
+        {/* Attendance Chart - Conditional Rendering */}
+        {isMobile ? (
+          <MobileDashboardChart 
+            chartData={chartData}
+            userRole={user.role}
+          />
+        ) : (
+          <DesktopDashboardChart 
+            chartData={chartData}
+            userRole={user.role}
+          />
+        )}
 
         {/* Recent Activities */}
         <div className="bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden">

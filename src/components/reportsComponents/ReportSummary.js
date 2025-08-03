@@ -43,17 +43,14 @@ export default function ReportSummary({ summary, reportType }) {
     
     const keyLower = key.toLowerCase();
     
-    // Format percentages
     if (keyLower.includes('percentage')) {
       return `${parseFloat(value).toFixed(1)}%`;
     }
     
-    // Format hours
     if (keyLower.includes('hours') && keyLower.includes('avg')) {
       return `${parseFloat(value).toFixed(1)}h`;
     }
     
-    // Format currency
     if (keyLower.includes('budget') || keyLower.includes('amount')) {
       return new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -62,7 +59,6 @@ export default function ReportSummary({ summary, reportType }) {
       }).format(value);
     }
     
-    // Format large numbers
     if (typeof value === 'number' && value >= 1000) {
       return value.toLocaleString();
     }
@@ -77,7 +73,6 @@ export default function ReportSummary({ summary, reportType }) {
       .trim();
   };
 
-  // Get relevant summary cards based on report type
   const getRelevantSummary = () => {
     const allSummary = Object.entries(summary);
     
@@ -99,7 +94,7 @@ export default function ReportSummary({ summary, reportType }) {
           ['totalDepartments', 'totalEmployees', 'totalBudget'].includes(key)
         );
       default:
-        return allSummary.slice(0, 6); // Show first 6 items for other reports
+        return allSummary.slice(0, 6);
     }
   };
 
@@ -110,7 +105,7 @@ export default function ReportSummary({ summary, reportType }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {relevantSummary.map(([key, value]) => {
         const IconComponent = getSummaryIcon(key);
         const colorClass = getSummaryColor(key);
@@ -118,27 +113,27 @@ export default function ReportSummary({ summary, reportType }) {
         return (
           <div 
             key={key} 
-            className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 overflow-hidden"
+            className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 overflow-hidden"
           >
-            {/* Gradient accent bar */}
-            <div className={`h-1 bg-gradient-to-r ${colorClass}`}></div>
+            {/* Compact accent bar */}
+            <div className={`h-0.5 bg-gradient-to-r ${colorClass}`}></div>
             
-            <div className="p-6">
+            <div className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600 mb-2 uppercase tracking-wide">
+                  <p className="text-xs font-medium text-gray-600 mb-1 uppercase tracking-wide">
                     {formatLabel(key)}
                   </p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900">
                     {formatValue(key, value)}
                   </p>
                   
                   {/* Additional context for certain metrics */}
                   {key.toLowerCase().includes('percentage') && value > 0 && (
                     <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div 
-                          className={`h-2 rounded-full bg-gradient-to-r ${colorClass}`}
+                          className={`h-1.5 rounded-full bg-gradient-to-r ${colorClass}`}
                           style={{ width: `${Math.min(value, 100)}%` }}
                         ></div>
                       </div>
@@ -146,27 +141,27 @@ export default function ReportSummary({ summary, reportType }) {
                   )}
                 </div>
                 
-                <div className={`p-3 rounded-2xl bg-gradient-to-br ${colorClass} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12`}>
-                  <IconComponent className="w-6 h-6 text-white" />
+                <div className={`p-2.5 rounded-lg bg-gradient-to-br ${colorClass} transition-transform duration-200 group-hover:scale-110`}>
+                  <IconComponent className="w-5 h-5 text-white" />
                 </div>
               </div>
               
               {/* Trend indicator for specific metrics */}
               {(key.toLowerCase().includes('percentage') || key.toLowerCase().includes('avg')) && (
-                <div className="mt-4 flex items-center text-sm">
+                <div className="mt-3 flex items-center text-xs">
                   {value >= 80 ? (
                     <span className="text-emerald-600 flex items-center">
-                      <FiTrendingUp className="w-4 h-4 mr-1" />
+                      <FiTrendingUp className="w-3 h-3 mr-1" />
                       Excellent
                     </span>
                   ) : value >= 60 ? (
                     <span className="text-amber-600 flex items-center">
-                      <FiBarChart className="w-4 h-4 mr-1" />
+                      <FiBarChart className="w-3 h-3 mr-1" />
                       Good
                     </span>
                   ) : (
                     <span className="text-red-600 flex items-center">
-                      <FiAlertCircle className="w-4 h-4 mr-1" />
+                      <FiAlertCircle className="w-3 h-3 mr-1" />
                       Needs Attention
                     </span>
                   )}

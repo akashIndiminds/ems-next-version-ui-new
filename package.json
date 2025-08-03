@@ -5,12 +5,20 @@
   "scripts": {
     "dev": "next dev -p 3010",
     "build": "next build",
+    "build:mobile": "BUILD_TARGET=mobile next build",
     "start": "next start -p 3010",
     "start:3000": "next start",
     "start:3010": "next start -p 3010",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next build",
+    "cap:build": "npm run export && npx cap copy && npx cap sync",
+    "cap:android": "npm run cap:build && npx cap open android",
+    "cap:serve": "npm run export && npx cap copy && npx cap run android"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
     "js-cookie": "^3.0.5",

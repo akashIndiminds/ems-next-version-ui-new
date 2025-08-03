@@ -175,7 +175,7 @@ export default function DepartmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen p-4 bg-gray-50">
       <div className="p-4 sm:p-6 space-y-6">
        {/* Header - Mobile Version (hidden on desktop) */}
 <div className="block sm:hidden">

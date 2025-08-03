@@ -1,3 +1,5 @@
+
+// Compact DesktopReportFilters.js
 import React from "react";
 import { FiBarChart, FiCalendar, FiUsers, FiHome } from "react-icons/fi";
 
@@ -22,7 +24,6 @@ const DesktopReportFilters = ({
       [field]: value,
     };
 
-    // If report type changes, reset other filters
     if (field === "reportType") {
       newFilters.departmentId = "all";
       newFilters.employeeId = "all";
@@ -42,7 +43,6 @@ const DesktopReportFilters = ({
     });
   };
 
-  // Filter employees based on selected department
   const filteredEmployees =
     selectedDepartment === "all"
       ? employees
@@ -58,22 +58,18 @@ const DesktopReportFilters = ({
   ];
 
   const handleQuickDateRange = (range) => {
-    let fromDate,
-      toDate = new Date().toISOString().split("T")[0];
+    let fromDate, toDate = new Date().toISOString().split("T")[0];
 
     if (range.days === "month") {
       fromDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-        .toISOString()
-        .split("T")[0];
+        .toISOString().split("T")[0];
     } else if (range.days === "lastMonth") {
       const lastMonth = new Date();
       lastMonth.setMonth(lastMonth.getMonth() - 1);
       fromDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1)
-        .toISOString()
-        .split("T")[0];
+        .toISOString().split("T")[0];
       toDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0)
-        .toISOString()
-        .split("T")[0];
+        .toISOString().split("T")[0];
     } else {
       const date = new Date();
       date.setDate(date.getDate() - range.days);
@@ -90,29 +86,29 @@ const DesktopReportFilters = ({
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
-      <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-          <FiBarChart className="mr-3 text-blue-600" />
+    <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-200 bg-blue-50">
+        <h2 className="text-lg font-medium text-gray-900 flex items-center">
+          <FiBarChart className="mr-2 text-blue-600 h-4 w-4" />
           Report Configuration
         </h2>
-        <p className="text-gray-600 mt-1">
+        <p className="text-gray-600 text-sm">
           Configure your report parameters and generate insights
         </p>
       </div>
 
-      <div className="p-6">
+      <div className="p-4">
         {/* Main Filters Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-4">
           {/* Report Type */}
           <div className="lg:col-span-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               📊 Report Type
             </label>
             <select
               value={reportType}
               onChange={(e) => handleInputChange("reportType", e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-gray-400"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors duration-200 hover:border-gray-400 text-sm"
             >
               <option value="attendance">📊 Attendance Report</option>
               <option value="leave">🏖️ Leave Report</option>
@@ -125,17 +121,17 @@ const DesktopReportFilters = ({
           {/* Department Filter */}
           {["attendance", "employee", "monthly"].includes(reportType) && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 🏢 Department
               </label>
               <div className="relative">
-                <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <FiHome className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
                 <select
                   value={selectedDepartment}
                   onChange={(e) =>
                     handleInputChange("departmentId", e.target.value)
                   }
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors duration-200 hover:border-gray-400 appearance-none text-sm"
                 >
                   <option value="all">All Departments</option>
                   {departments.map((dept) => (
@@ -151,17 +147,17 @@ const DesktopReportFilters = ({
           {/* Employee Filter */}
           {["attendance", "monthly"].includes(reportType) && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 👤 Employee
               </label>
               <div className="relative">
-                <FiUsers className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <FiUsers className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
                 <select
                   value={selectedEmployee}
                   onChange={(e) =>
                     handleInputChange("employeeId", e.target.value)
                   }
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors duration-200 hover:border-gray-400 appearance-none text-sm"
                 >
                   <option value="all">All Employees</option>
                   {filteredEmployees.map((emp) => (
@@ -176,33 +172,33 @@ const DesktopReportFilters = ({
 
           {/* From Date */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 From Date
             </label>
             <div className="relative">
-              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <input
                 type="date"
                 value={dateRange.fromDate}
                 onChange={(e) => handleDateChange("fromDate", e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 hover:border-gray-400 text-sm"
               />
             </div>
           </div>
 
           {/* To Date */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 To Date
             </label>
             <div className="relative">
-              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <input
                 type="date"
                 value={dateRange.toDate}
                 onChange={(e) => handleDateChange("toDate", e.target.value)}
                 max={new Date().toISOString().split("T")[0]}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 hover:border-gray-400 text-sm"
               />
             </div>
           </div>
@@ -212,11 +208,11 @@ const DesktopReportFilters = ({
             <button
               onClick={onGenerateReport}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium group"
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center transition-colors duration-200 shadow-sm hover:shadow text-sm font-medium group"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                   Generating...
                 </>
               ) : (
@@ -230,9 +226,9 @@ const DesktopReportFilters = ({
         </div>
 
         {/* Quick Filters */}
-        <div className="pt-6 border-t border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-700">
+        <div className="pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-700">
               ⚡ Quick Date Ranges
             </h3>
             <span className="text-xs text-gray-500">
@@ -244,7 +240,7 @@ const DesktopReportFilters = ({
               <button
                 key={range.label}
                 onClick={() => handleQuickDateRange(range)}
-                className="px-4 py-2 text-sm bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 rounded-lg transition-all duration-200 font-medium hover:shadow-md transform hover:scale-105"
+                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors duration-200 font-medium hover:shadow-sm transform hover:scale-105"
               >
                 {range.label}
               </button>
@@ -253,11 +249,11 @@ const DesktopReportFilters = ({
         </div>
 
         {/* Filter Summary */}
-        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">
+        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
             📋 Current Selection
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
             <div>
               <span className="text-gray-500">Report Type:</span>
               <span className="ml-2 font-medium text-gray-900">
@@ -291,3 +287,4 @@ const DesktopReportFilters = ({
 };
 
 export default DesktopReportFilters;
+

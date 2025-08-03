@@ -8,13 +8,13 @@ import { employeeAPI, departmentAPI } from '@/app/lib/api';
 import toast from 'react-hot-toast';
 import { DeleteAlert } from '@/components/ui/AlertDialog';
 
-// Mobile Components
+// Mobile Components - Updated import paths
 import MobileEmployeesHeader from '@/components/employees/mainpage/mobile/MobileEmployeesHeader';
 import MobileEmployeesFilters from '@/components/employees/mainpage/mobile/MobileEmployeesFilters';
 import MobileEmployeesContent from '@/components/employees/mainpage/mobile/MobileEmployeesContent';
 import MobileEmployeesStats from '@/components/employees/mainpage/mobile/MobileEmployeesStats';
 
-// Desktop Components
+// Desktop Components - Updated import paths
 import DesktopEmployeesHeader from '@/components/employees/mainpage/desktop/DesktopEmployeesHeader';
 import DesktopEmployeesFilters from '@/components/employees/mainpage/desktop/DesktopEmployeesFilters';
 import DesktopEmployeesStats from '@/components/employees/mainpage/desktop/DesktopEmployeesStats';
@@ -123,10 +123,27 @@ export default function ResponsiveEmployeesPage() {
     setCurrentPage(1);
   };
 
-  // Navigation handlers
-  const handleAddEmployee = () => router.push('/employees/new');
-  const handleViewEmployee = (id) => router.push(`/employees/${id}/view`);
-  const handleEditEmployee = (id) => router.push(`/employees/${id}/edit`);
+  // Navigation handlers - Updated for static export compatibility
+  const handleAddEmployee = () => {
+    // For static export, we'll use a different approach
+    if (typeof window !== 'undefined') {
+      router.push('/employees/new');
+    }
+  };
+
+  const handleViewEmployee = (id) => {
+    if (typeof window !== 'undefined') {
+      // For static export, consider using query params
+      router.push(`/employees/${id}?action=view`);
+    }
+  };
+
+  const handleEditEmployee = (id) => {
+    if (typeof window !== 'undefined') {
+      // For static export, consider using query params
+      router.push(`/employees/${id}?action=edit`);
+    }
+  };
 
   // Filter configuration
   const defaultFilters = [
@@ -235,14 +252,13 @@ export default function ResponsiveEmployeesPage() {
         {showMobileSearch && (
           <div className="px-4 py-3 bg-white border-b border-gray-200">
            <input
-  type="text"
-  placeholder="Search employees..."
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-  className="w-full px-4 py-3 border rounded-xl text-black 
-             border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none"
-/>
-
+              type="text"
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 border rounded-xl text-black 
+                         border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none"
+            />
           </div>
         )}
 

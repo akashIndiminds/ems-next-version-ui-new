@@ -1,3 +1,4 @@
+
 // src/components/company/DesktopCompanyHeader.js
 "use client";
 
@@ -8,20 +9,20 @@ export default function DesktopCompanyHeader({
   onUpgradeClick 
 }) {
   return (
-    <div className="mb-8">
+    <div className="mb-6">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold text-gray-900">
             Company Settings
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-1 text-gray-600">
             Manage your company details and subscription
           </p>
         </div>
         
         <button
           onClick={onUpgradeClick}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors duration-200 shadow-sm hover:shadow flex items-center"
         >
           <FiCreditCard className="w-4 h-4 mr-2" />
           Upgrade Plan

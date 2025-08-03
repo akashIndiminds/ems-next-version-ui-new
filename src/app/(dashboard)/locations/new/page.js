@@ -220,7 +220,7 @@ export default function ResponsiveNewLocationPage() {
   // Desktop/Tablet Layout
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-4 w-full mx-auto">
         <DesktopNewLocationHeader
           onBack={handleBack}
           isEditing={isEditing}

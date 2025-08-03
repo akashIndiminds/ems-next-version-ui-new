@@ -607,16 +607,6 @@ const GoogleMapsSearch = ({
 
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-          <FiGlobe className="mr-2 text-blue-600" />
-          Google Maps Location Search
-        </h2>
-        <p className="text-gray-600 mt-1">
-          Search any place or click on map to select location
-        </p>
-      </div>
-
       <div className="p-6 space-y-4">
         {/* Google Places Search */}
         <div className="relative">
@@ -688,7 +678,7 @@ const GoogleMapsSearch = ({
         </div>
 
         {/* Map Tips */}
-        <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
+        {/* <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
           <p className="font-medium mb-2">Tips:</p>
           <ul className="space-y-1">
             <li>• Click anywhere on map to select that location</li>
@@ -696,7 +686,7 @@ const GoogleMapsSearch = ({
             <li>• Use map type control for satellite view</li>
             <li>• Zoom in for more precise selection</li>
           </ul>
-        </div>
+        </div> */}
 
         {/* Location Status */}
         {locationSelected && (

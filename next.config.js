@@ -1,17 +1,15 @@
 /** @type {import('next').NextConfig} */
+
+const isStaticExport = process.env.BUILD_TARGET === 'mobile';
+
 const nextConfig = {
   reactStrictMode: true,
+  ...(isStaticExport && { output: 'export' }),
+  trailingSlash: true,
+  ...(isStaticExport && { distDir: 'out' }),
   images: {
+    unoptimized: true,
     domains: ['localhost'],
-  },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/login',
-        permanent: false,
-      },
-    ];
   },
   async headers() {
     return [

@@ -13,15 +13,23 @@ export const locationAPI = {
   },
 
 
-   getByCompany: (companyId, params = {}) => {
-      const id = Array.isArray(companyId) ? companyId[0] : companyId;
-      return apiClient.get('/locations', { 
-        params: { 
-          companyId: id,
-          ...params 
-        } 
-      });
-    }, 
+   getByCompany: async (companyId, params = {}) => {
+    // Handle if companyId is array or direct value
+    const id = Array.isArray(companyId) ? companyId[0] : companyId;
+    
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    queryParams.append('companyId', id);
+    
+    // Add additional params if provided
+    Object.keys(params).forEach((key) => {
+      if (params[key]) queryParams.append(key, params[key]);
+    });
+
+    console.log('Location API call:', `/locations?${queryParams.toString()}`);
+    
+    return await apiClient.get(`/locations?${queryParams.toString()}`);
+  }, 
 
   // Get location by ID
   getById: async (id) => {

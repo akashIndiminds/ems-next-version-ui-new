@@ -1,3 +1,4 @@
+
 // components/locations/mainpage/desktop/DesktopLocationHeader.js
 "use client";
 
@@ -9,22 +10,23 @@ export default function DesktopLocationHeader({
   title = "Location Management"
 }) {
   return (
-    <div className="flex justify-between items-center mb-8">
+    <div className="flex justify-between items-center mb-6">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold text-gray-900">
           {title}
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-1 text-gray-600 text-sm">
           Manage office locations with Google Maps integration and geofencing
         </p>
       </div>
       <button
         onClick={onAddLocation}
-        className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center transition-colors duration-200 shadow-sm hover:shadow text-sm font-medium"
       >
-        <FiPlus className="mr-2" />
+        <FiPlus className="mr-2 h-4 w-4" />
         Add New Location
       </button>
     </div>
   );
 }
+

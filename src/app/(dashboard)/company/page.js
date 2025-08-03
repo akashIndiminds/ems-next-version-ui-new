@@ -8,10 +8,10 @@ import { format } from "date-fns";
 import toast from "react-hot-toast";
 
 // Import Components
-import MobileCompanyHeader from "@/components/company/MobileCompanyHeader";
-import MobileCompanyContent from "@/components/company/MobileCompanyContent";
-import DesktopCompanyHeader from "@/components/company/DesktopCompanyHeader";
-import DesktopCompanyContent from "@/components/company/DesktopCompanyContent";
+import MobileCompanyHeader from "@/components/company/mobile/MobileCompanyHeader";
+import MobileCompanyContent from "@/components/company/mobile/MobileCompanyContent";
+import DesktopCompanyHeader from "@/components/company/desktop/DesktopCompanyHeader";
+import DesktopCompanyContent from "@/components/company/desktop/DesktopCompanyContent";
 import UpgradePlanModal from "@/components/company/UpgradePlanModal";
 
 export default function CompanyPage() {
@@ -140,7 +140,7 @@ export default function CompanyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen p-4 bg-gray-50">
       {/* Conditional rendering based on device type */}
       {isMobile ? (
         <>

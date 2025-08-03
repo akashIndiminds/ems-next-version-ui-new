@@ -163,7 +163,7 @@ export default function AttendancePage() {
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        deviceId: 5,
+        deviceId: 2,
         remarks: 'Web check-in with location validation',
       });
 
@@ -193,7 +193,7 @@ export default function AttendancePage() {
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        deviceId: 5,
+        deviceId: 2,
         remarks: 'Web check-out with location validation',
       });
 
@@ -235,7 +235,7 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen p-4 bg-gray-50">
       <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Compact Mobile Header */}
         <div className="md:hidden">
