@@ -1,24 +1,24 @@
 // src/app/(dashboard)/departments/page.js
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { departmentAPI } from '@/app/lib/api';
-import { FiPlus } from 'react-icons/fi';
-import { MdBusiness } from 'react-icons/md';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { departmentAPI } from "@/app/lib/api";
+import { FiPlus } from "react-icons/fi";
+import { MdBusiness } from "react-icons/md";
+import toast from "react-hot-toast";
 
 // Import responsive components
-import MobileDepartmentSearch from '@/components/departmentsComponent/mobile/MobileDepartmentSearch';
-import MobileDepartmentCards from '@/components/departmentsComponent/mobile/MobileDepartmentCards';
-import MobileDepartmentList from '@/components/departmentsComponent/mobile/MobileDepartmentList';
-import MobilePagination from '@/components/departmentsComponent/mobile/MobilePagination';
-import MobileDepartmentHeader from '@/components/departmentsComponent/mobile/MobileDepartmentHeader';
+import MobileDepartmentSearch from "@/components/departmentsComponent/mobile/MobileDepartmentSearch";
+import MobileDepartmentCards from "@/components/departmentsComponent/mobile/MobileDepartmentCards";
+import MobileDepartmentList from "@/components/departmentsComponent/mobile/MobileDepartmentList";
+import MobilePagination from "@/components/departmentsComponent/mobile/MobilePagination";
+import MobileDepartmentHeader from "@/components/departmentsComponent/mobile/MobileDepartmentHeader";
 
-import DesktopDepartmentSearch from '@/components/departmentsComponent/desktop/DesktopDepartmentSearch';
-import DesktopDepartmentContent from '@/components/departmentsComponent/desktop/DesktopDepartmentContent';
-import DesktopPagination from '@/components/departmentsComponent/desktop/DesktopPagination';
-import DesktopDepartmentHeader from '@/components/departmentsComponent/desktop/DesktopDepartmentHeader';
+import DesktopDepartmentSearch from "@/components/departmentsComponent/desktop/DesktopDepartmentSearch";
+import DesktopDepartmentContent from "@/components/departmentsComponent/desktop/DesktopDepartmentContent";
+import DesktopPagination from "@/components/departmentsComponent/desktop/DesktopPagination";
+import DesktopDepartmentHeader from "@/components/departmentsComponent/desktop/DesktopDepartmentHeader";
 
 export default function DepartmentsPage() {
   const { user } = useAuth();
@@ -27,26 +27,26 @@ export default function DepartmentsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
   const [formData, setFormData] = useState({
-    departmentCode: '',
-    departmentName: '',
-    budget: ''
+    departmentCode: "",
+    departmentName: "",
+    budget: "",
   });
 
   // Search and pagination states
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6); // 6 cards per page
-  const [viewMode, setViewMode] = useState('list'); // 'card', 'list', or 'table'
+  const [viewMode, setViewMode] = useState("list"); // 'card', 'list', or 'table'
 
   // Auto-detect currency based on user location
   const currencySymbol = useMemo(() => {
-    const userCountry = user?.company?.country || user?.country || 'IN';
+    const userCountry = user?.company?.country || user?.country || "IN";
     const currencyMap = {
-      'IN': '₹',
-      'US': '$',
-      'GB': '£',
-      'EU': '€',
-      'default': '₹'
+      IN: "₹",
+      US: "$",
+      GB: "£",
+      EU: "€",
+      default: "₹",
     };
     return currencyMap[userCountry] || currencyMap.default;
   }, [user]);
@@ -63,8 +63,8 @@ export default function DepartmentsPage() {
         setDepartments(response.data.data);
       }
     } catch (error) {
-      console.error('Error fetching departments:', error);
-      toast.error('Failed to load departments');
+      console.error("Error fetching departments:", error);
+      toast.error("Failed to load departments");
     } finally {
       setLoading(false);
     }
@@ -73,11 +73,16 @@ export default function DepartmentsPage() {
   // Search functionality
   const filteredDepartments = useMemo(() => {
     if (!searchTerm.trim()) return departments;
-    
-    return departments.filter(department => 
-      department.DepartmentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      department.DepartmentCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      department.ManagerName?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    return departments.filter(
+      (department) =>
+        department.DepartmentName?.toLowerCase().includes(
+          searchTerm.toLowerCase()
+        ) ||
+        department.DepartmentCode?.toLowerCase().includes(
+          searchTerm.toLowerCase()
+        ) ||
+        department.ManagerName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [departments, searchTerm]);
 
@@ -98,12 +103,15 @@ export default function DepartmentsPage() {
     e.preventDefault();
     try {
       if (editingDepartment) {
-        const response = await departmentAPI.update(editingDepartment.DepartmentID, {
-          DepartmentName: formData.departmentName,
-          Budget: formData.budget
-        });
+        const response = await departmentAPI.update(
+          editingDepartment.DepartmentID,
+          {
+            DepartmentName: formData.departmentName,
+            Budget: formData.budget,
+          }
+        );
         if (response.data.success) {
-          toast.success('Department updated successfully');
+          toast.success("Department updated successfully");
           setEditingDepartment(null);
         }
       } else {
@@ -111,17 +119,17 @@ export default function DepartmentsPage() {
           CompanyID: user.company.companyId,
           DepartmentCode: formData.departmentCode,
           DepartmentName: formData.departmentName,
-          Budget: formData.budget || 0
+          Budget: formData.budget || 0,
         });
         if (response.data.success) {
-          toast.success('Department created successfully');
+          toast.success("Department created successfully");
         }
       }
       setShowAddModal(false);
       resetForm();
       fetchDepartments();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save department');
+      toast.error(error.response?.data?.message || "Failed to save department");
     }
   };
 
@@ -130,30 +138,30 @@ export default function DepartmentsPage() {
     setFormData({
       departmentCode: department.DepartmentCode,
       departmentName: department.DepartmentName,
-      budget: department.Budget || ''
+      budget: department.Budget || "",
     });
     setShowAddModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this department?')) return;
-    
+    if (!confirm("Are you sure you want to delete this department?")) return;
+
     try {
       const response = await departmentAPI.delete(id);
       if (response.data.success) {
-        toast.success('Department deleted successfully');
+        toast.success("Department deleted successfully");
         fetchDepartments();
       }
     } catch (error) {
-      toast.error('Failed to delete department');
+      toast.error("Failed to delete department");
     }
   };
 
   const resetForm = () => {
     setFormData({
-      departmentCode: '',
-      departmentName: '',
-      budget: ''
+      departmentCode: "",
+      departmentName: "",
+      budget: "",
     });
     setEditingDepartment(null);
   };
@@ -176,24 +184,24 @@ export default function DepartmentsPage() {
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
-      <div className="p-4 sm:p-6 space-y-6">
-       {/* Header - Mobile Version (hidden on desktop) */}
-<div className="block sm:hidden">
-  <MobileDepartmentHeader 
-    userRole={user.role}
-    onAddClick={() => setShowAddModal(true)}
-  />
-</div>
+      <div className="sm:p-6 space-y-6">
+        {/* Header - Mobile Version (hidden on desktop) */}
+        <div className="block sm:hidden">
+          <MobileDepartmentHeader
+            userRole={user.role}
+            onAddClick={() => setShowAddModal(true)}
+          />
+        </div>
 
-{/* Header - Desktop Version (hidden on mobile) */}
-<div className="hidden sm:block">
-  <DesktopDepartmentHeader 
-    userRole={user.role}
-    onAddClick={() => setShowAddModal(true)}
-  />
-</div>
+        {/* Header - Desktop Version (hidden on mobile) */}
+        <div className="hidden sm:block">
+          <DesktopDepartmentHeader
+            userRole={user.role}
+            onAddClick={() => setShowAddModal(true)}
+          />
+        </div>
         {/* Search and View Controls - Mobile Version */}
-        <MobileDepartmentSearch 
+        <MobileDepartmentSearch
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           viewMode={viewMode}
@@ -202,7 +210,7 @@ export default function DepartmentsPage() {
         />
 
         {/* Search and View Controls - Desktop Version */}
-        <DesktopDepartmentSearch 
+        <DesktopDepartmentSearch
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           viewMode={viewMode}
@@ -214,11 +222,15 @@ export default function DepartmentsPage() {
         {currentDepartments.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <MdBusiness className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No departments found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No departments found
+            </h3>
             <p className="text-sm text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating a new department.'}
+              {searchTerm
+                ? "Try adjusting your search terms."
+                : "Get started by creating a new department."}
             </p>
-            {!searchTerm && user.role === 'admin' && (
+            {!searchTerm && user.role === "admin" && (
               <button
                 onClick={() => setShowAddModal(true)}
                 className="mt-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center mx-auto transition-all duration-200 shadow-lg font-medium"
@@ -231,8 +243,8 @@ export default function DepartmentsPage() {
         ) : (
           <>
             {/* Mobile Card View */}
-            {viewMode === 'card' && (
-              <MobileDepartmentCards 
+            {viewMode === "card" && (
+              <MobileDepartmentCards
                 departments={currentDepartments}
                 handleEdit={handleEdit}
                 handleDelete={handleDelete}
@@ -242,8 +254,8 @@ export default function DepartmentsPage() {
             )}
 
             {/* Mobile List View */}
-            {viewMode === 'list' && (
-              <MobileDepartmentList 
+            {viewMode === "list" && (
+              <MobileDepartmentList
                 departments={currentDepartments}
                 handleEdit={handleEdit}
                 handleDelete={handleDelete}
@@ -253,7 +265,7 @@ export default function DepartmentsPage() {
             )}
 
             {/* Desktop Content */}
-            <DesktopDepartmentContent 
+            <DesktopDepartmentContent
               departments={currentDepartments}
               viewMode={viewMode}
               handleEdit={handleEdit}
@@ -263,7 +275,7 @@ export default function DepartmentsPage() {
             />
 
             {/* Pagination - Mobile Version */}
-            <MobilePagination 
+            <MobilePagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
@@ -273,7 +285,7 @@ export default function DepartmentsPage() {
 
             {/* Pagination - Desktop Version */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <DesktopPagination 
+              <DesktopPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
@@ -288,49 +300,70 @@ export default function DepartmentsPage() {
         {showAddModal && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => {
-                setShowAddModal(false);
-                resetForm();
-              }}></div>
-              
+              <div
+                className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                onClick={() => {
+                  setShowAddModal(false);
+                  resetForm();
+                }}
+              ></div>
+
               <div className="relative bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl">
                 <div className="mb-6">
                   <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    {editingDepartment ? 'Edit Department' : 'Add New Department'}
+                    {editingDepartment
+                      ? "Edit Department"
+                      : "Add New Department"}
                   </h3>
                   <p className="text-gray-600 mt-2 text-sm">
-                    {editingDepartment ? 'Update department details' : 'Create a new department for your organization'}
+                    {editingDepartment
+                      ? "Update department details"
+                      : "Create a new department for your organization"}
                   </p>
                 </div>
-                
+
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4">
                     {!editingDepartment && (
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Department Code</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Department Code
+                        </label>
                         <input
                           type="text"
                           required
                           value={formData.departmentCode}
-                          onChange={(e) => setFormData({...formData, departmentCode: e.target.value.toUpperCase()})}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              departmentCode: e.target.value.toUpperCase(),
+                            })
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder="HR, IT, SALES"
                         />
                       </div>
                     )}
-                    
+
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Department Name</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Department Name
+                      </label>
                       <input
                         type="text"
                         required
                         value={formData.departmentName}
-                        onChange={(e) => setFormData({...formData, departmentName: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            departmentName: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Human Resources"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Budget (Optional) - {currencySymbol}
@@ -338,13 +371,15 @@ export default function DepartmentsPage() {
                       <input
                         type="number"
                         value={formData.budget}
-                        onChange={(e) => setFormData({...formData, budget: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({ ...formData, budget: e.target.value })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="1000000"
                       />
                     </div>
                   </div>
-                  
+
                   <div className="mt-8 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
                     <button
                       type="button"
@@ -360,7 +395,7 @@ export default function DepartmentsPage() {
                       type="submit"
                       className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 py-3 px-6 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                     >
-                      {editingDepartment ? 'Update' : 'Add'} Department
+                      {editingDepartment ? "Update" : "Add"} Department
                     </button>
                   </div>
                 </form>

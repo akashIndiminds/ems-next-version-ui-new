@@ -3,20 +3,151 @@
 // =====================================================
 
 // src/app/lib/api/attendanceManagementAPI.js
+// =====================================================
+
 import apiClient from "../apiClient";
+import DeviceManager from "../deviceManager";
+// ================================
+// REGULAR EMPLOYEE ATTENDANCE API
+// ================================
+export const attendanceAPI = {
+  // Enhanced check-in with device management
+  async checkIn(data) {
+    try {
+      // Get device information
+      const deviceInfo = DeviceManager.getDeviceInfo();
+      
+      const payload = {
+        ...data,
+        deviceInfo: deviceInfo.deviceInfo, // Send device info to backend
+        // Remove hard-coded deviceId, let backend handle it
+      };
 
+      // Remove deviceId from payload if it exists
+      delete payload.deviceId;
+
+      console.log('🔄 Check-in payload:', payload);
+
+      const response = await apiClient.post('/attendance/checkin', payload);
+      
+      // Store device ID if returned by backend
+      if (response.data.success && response.data.deviceInfo?.deviceId) {
+        const updatedDeviceInfo = {
+          ...deviceInfo,
+          deviceId: response.data.deviceInfo.deviceId
+        };
+        DeviceManager.storeDeviceInfo(updatedDeviceInfo);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('❌ Check-in API error:', error);
+      throw error;
+    }
+  },
+
+  // Enhanced check-out with device management
+  async checkOut(data) {
+    try {
+      // Get device information
+      const deviceInfo = DeviceManager.getDeviceInfo();
+      
+      const payload = {
+        ...data,
+        deviceInfo: deviceInfo.deviceInfo,
+        // Remove hard-coded deviceId
+      };
+
+      // Remove deviceId from payload if it exists
+      delete payload.deviceId;
+
+      console.log('🔄 Check-out payload:', payload);
+
+      const response = await apiClient.post('/attendance/checkout', payload);
+      
+      // Store device ID if returned by backend
+      if (response.data.success && response.data.deviceInfo?.deviceId) {
+        const updatedDeviceInfo = {
+          ...deviceInfo,
+          deviceId: response.data.deviceInfo.deviceId
+        };
+        DeviceManager.storeDeviceInfo(updatedDeviceInfo);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('❌ Check-out API error:', error);
+      throw error;
+    }
+  },
+
+  // Get today's status
+  async getTodayStatus(employeeId) {
+    try {
+      const response = await apiClient.get(`/attendance/today/${employeeId}`);
+      return response;
+    } catch (error) {
+      console.error('❌ Today status API error:', error);
+      throw error;
+    }
+  },
+
+  // Get attendance records
+  async getRecords({ employeeId, fromDate, toDate }) {
+    try {
+      const response = await apiClient.get('/attendance', {
+        params: { employeeId, fromDate, toDate }
+      });
+      return response;
+    } catch (error) {
+      console.error('❌ Attendance records API error:', error);
+      throw error;
+    }
+  },
+
+  // Get device status (new method)
+  async getDeviceStatus() {
+    try {
+      const deviceInfo = DeviceManager.getDeviceInfo();
+      return {
+        success: true,
+        data: {
+          deviceUUID: deviceInfo.deviceUUID,
+          deviceType: deviceInfo.deviceType,
+          isRegistered: !!deviceInfo.deviceId,
+          deviceInfo: deviceInfo
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  // Get employee devices
+  async getEmployeeDevices(employeeId) {
+    try {
+      const response = await apiClient.get(`/attendance/devices/${employeeId}`);
+      return response;
+    } catch (error) {
+      console.error('❌ Employee devices API error:', error);
+      throw error;
+    }
+  }
+};
+
+// ===============================================
+// ATTENDANCE MANAGEMENT API (Admin/Manager)
+// ===============================================
 export const attendanceManagementAPI = {
-  // ================================
-  // EMPLOYEE ATTENDANCE MANAGEMENT
-  // ================================
-
   // Get employee attendance for a specific date
   getEmployeeAttendanceByDate: async (employeeId, date) => {
     try {
       console.log('Getting employee attendance for:', { employeeId, date });
       const response = await apiClient.get('/attendance-management/employee-attendance', {
-        employeeId,
-        date
+        params: { employeeId, date }
       });
       console.log('Employee attendance response:', response);
       return response;
@@ -69,7 +200,7 @@ export const attendanceManagementAPI = {
   getEmployeesList: async (params = {}) => {
     try {
       console.log('Getting employees list:', params);
-      const response = await apiClient.get('/attendance-management/employees-list', params);
+      const response = await apiClient.get('/attendance-management/employees-list', { params });
       console.log('Employees list response:', response);
       return response;
     } catch (error) {
@@ -82,11 +213,33 @@ export const attendanceManagementAPI = {
   getAttendanceSummary: async (params = {}) => {
     try {
       console.log('Getting attendance summary:', params);
-      const response = await apiClient.get('/attendance-management/attendance-summary', params);
+      const response = await apiClient.get('/attendance-management/attendance-summary', { params });
       console.log('Attendance summary response:', response);
       return response;
     } catch (error) {
       console.error('Error getting attendance summary:', error);
+      throw error;
+    }
+  },
+
+  // Get device usage analytics (Admin feature)
+  getDeviceAnalytics: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/attendance-management/device-analytics', { params });
+      return response;
+    } catch (error) {
+      console.error('Error getting device analytics:', error);
+      throw error;
+    }
+  },
+
+  // Get suspicious device activities (Admin feature)
+  getSuspiciousActivities: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/attendance-management/suspicious-activities', { params });
+      return response;
+    } catch (error) {
+      console.error('Error getting suspicious activities:', error);
       throw error;
     }
   }
@@ -95,7 +248,6 @@ export const attendanceManagementAPI = {
 // ================================
 // ATTENDANCE MANAGEMENT UTILITIES
 // ================================
-
 export const attendanceManagementUtils = {
   // Format time for display (HH:MM AM/PM)
   formatTime: (timeString) => {
@@ -178,6 +330,19 @@ export const attendanceManagementUtils = {
     return statusIcons[status] || '❓';
   },
 
+  // Get device status color for UI
+  getDeviceStatusColor: (status) => {
+    const deviceColors = {
+      'Active': 'bg-green-100 text-green-800 border-green-200',
+      'Inactive': 'bg-red-100 text-red-800 border-red-200',
+      'Suspicious': 'bg-orange-100 text-orange-800 border-orange-200',
+      'Blocked': 'bg-red-100 text-red-800 border-red-200',
+      'New': 'bg-blue-100 text-blue-800 border-blue-200'
+    };
+    
+    return deviceColors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+  },
+
   // Validate attendance data
   validateAttendanceData: (data) => {
     const errors = [];
@@ -245,13 +410,41 @@ export const attendanceManagementUtils = {
     } catch (error) {
       return '';
     }
+  },
+
+  // Format device info for display
+  formatDeviceInfo: (deviceInfo) => {
+    if (!deviceInfo) return 'Unknown Device';
+    
+    const { deviceType, fingerprint } = deviceInfo;
+    const browser = fingerprint?.browserName || 'Unknown Browser';
+    const platform = fingerprint?.platform || 'Unknown Platform';
+    
+    return `${deviceType} - ${browser} (${platform})`;
+  },
+
+  // Check if device activity is suspicious
+  isDeviceSuspicious: (deviceActivity) => {
+    if (!deviceActivity) return false;
+    
+    const { recentUsers, locationChanges, timeGaps } = deviceActivity;
+    
+    // Multiple users on same device within short time
+    if (recentUsers && recentUsers.length > 2) return true;
+    
+    // Rapid location changes
+    if (locationChanges && locationChanges.length > 3) return true;
+    
+    // Unusual time gaps
+    if (timeGaps && timeGaps.some(gap => gap < 5 || gap > 720)) return true; // Less than 5 min or more than 12 hours
+    
+    return false;
   }
 };
 
 // ================================
 // ATTENDANCE MANAGEMENT CONSTANTS
 // ================================
-
 export const ATTENDANCE_CONSTANTS = {
   STATUS: {
     PRESENT: 'Present',
@@ -268,10 +461,32 @@ export const ATTENDANCE_CONSTANTS = {
     { value: 'HalfDay', label: 'Half Day', icon: '🕐' },
     { value: 'OnLeave', label: 'On Leave', icon: '🏖️' }
   ],
+
+  DEVICE_STATUS: {
+    ACTIVE: 'Active',
+    INACTIVE: 'Inactive',
+    SUSPICIOUS: 'Suspicious',
+    BLOCKED: 'Blocked',
+    NEW: 'New'
+  },
+
+  DEVICE_STATUS_OPTIONS: [
+    { value: 'Active', label: 'Active', icon: '✅', color: 'green' },
+    { value: 'Inactive', label: 'Inactive', icon: '⭕', color: 'red' },
+    { value: 'Suspicious', label: 'Suspicious', icon: '⚠️', color: 'orange' },
+    { value: 'Blocked', label: 'Blocked', icon: '🚫', color: 'red' },
+    { value: 'New', label: 'New Device', icon: '🆕', color: 'blue' }
+  ],
   
   TIME_FORMAT: {
     DISPLAY: 'h:mm A', // 12-hour format for display
     INPUT: 'HH:mm',    // 24-hour format for input
     API: 'HH:mm:ss'    // Full time format for API
+  },
+
+  DEVICE_TYPES: {
+    MOBILE: 'Mobile',
+    DESKTOP: 'Desktop',
+    TABLET: 'Tablet'
   }
 };

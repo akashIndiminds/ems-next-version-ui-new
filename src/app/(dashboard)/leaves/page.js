@@ -336,7 +336,7 @@ export default function LeavesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="sm:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-4 sm:space-y-0">
           <div>

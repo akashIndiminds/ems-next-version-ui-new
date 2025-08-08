@@ -4,11 +4,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { attendanceAPI } from '@/app/lib/api';
-import { FiClock, FiDownload, FiRefreshCw } from 'react-icons/fi';
+import { FiClock, FiDownload, FiRefreshCw, FiSmartphone } from 'react-icons/fi';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
 import { locationAPI } from '@/app/lib/api/locationAPI';
 import timeUtils from '@/app/lib/utils/timeUtils';
+import DeviceManager from '@/app/lib/deviceManager';
 import MobileTodayStatus from '@/components/attendanceComponent/MobileTodayStatus';
 import DesktopTodayStatus from '@/components/attendanceComponent/DesktopTodayStatus';
 import MobileAttendanceHistory from '@/components/attendanceComponent/MobileAttendanceHistory';
@@ -28,12 +29,27 @@ export default function AttendancePage() {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
 
+  // Device info state
+  const [deviceInfo, setDeviceInfo] = useState(null);
+
   const [dateRange, setDateRange] = useState({
     fromDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     toDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
   });
 
   const userLocation = user?.assignedLocation;
+
+  // Initialize device info on component mount
+  useEffect(() => {
+    try {
+      const deviceData = DeviceManager.getDeviceInfo();
+      setDeviceInfo(deviceData);
+      console.log('🔧 Device Info initialized:', deviceData);
+    } catch (error) {
+      console.error('❌ Device initialization error:', error);
+      toast.error('Device initialization failed');
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -153,27 +169,51 @@ export default function AttendancePage() {
     try {
       setCheckInLoading(true);
 
+      // Validate device info
+      if (!deviceInfo) {
+        toast.error('Device information not available');
+        return;
+      }
+
       const position = await validateLocation();
       if (!position) {
         return;
       }
 
+      // ✅ Remove hard-coded deviceId, let backend handle it
       const response = await attendanceAPI.checkIn({
         employeeId: user.employeeId,
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        deviceId: 2,
+        // deviceId: 2, // ❌ Removed hard-coded deviceId
         remarks: 'Web check-in with location validation',
       });
 
       if (response.data.success) {
         toast.success('✅ Checked in successfully!');
+        
+        // Show device info if available
+        if (response.data.deviceInfo) {
+          console.log('🔧 Device registered:', response.data.deviceInfo);
+          if (response.data.deviceInfo.isNewDevice) {
+            toast.success('📱 New device registered successfully!');
+          }
+        }
+        
         fetchAttendanceData();
       }
     } catch (error) {
       console.error('❌ Check-in error:', error);
-      toast.error(error.response?.data?.message || 'Failed to check in');
+      
+      // Handle specific error cases
+      if (error.response?.status === 409) {
+        toast.error('Device conflict: This device is registered to another employee');
+      } else if (error.response?.status === 423) {
+        toast.error('Device sharing detected. Please contact administrator.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to check in');
+      }
     } finally {
       setCheckInLoading(false);
     }
@@ -183,17 +223,24 @@ export default function AttendancePage() {
     try {
       setCheckOutLoading(true);
 
+      // Validate device info
+      if (!deviceInfo) {
+        toast.error('Device information not available');
+        return;
+      }
+
       const position = await validateLocation();
       if (!position) {
         return;
       }
 
+      // ✅ Remove hard-coded deviceId, let backend handle it
       const response = await attendanceAPI.checkOut({
         employeeId: user.employeeId,
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        deviceId: 2,
+        // deviceId: 2, // ❌ Removed hard-coded deviceId
         remarks: 'Web check-out with location validation',
       });
 
@@ -236,7 +283,7 @@ export default function AttendancePage() {
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
-      <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="sm:p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Compact Mobile Header */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
@@ -256,19 +303,22 @@ export default function AttendancePage() {
           </div>
           <p className="text-sm text-gray-600">Track attendance with location verification</p>
           
-          {/* Mobile Status Bar */}
+          {/* Mobile Status Bar with Device Info */}
           <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 mt-3">
             <div className="flex items-center gap-2 text-sm text-blue-700">
               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-              <span className="font-medium">Location enabled</span>
+              <span className="font-medium">Location & Device enabled</span>
             </div>
-            <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">
-              Live
-            </span>
+            <div className="flex items-center gap-1">
+              <FiSmartphone className="h-3 w-3 text-blue-600" />
+              <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">
+                {deviceInfo?.deviceType || 'Unknown'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Desktop Header */}
+        {/* Desktop Header with Device Info */}
         <div className="hidden md:block">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 lg:gap-6 lg:items-start">
             <div className="space-y-2">
@@ -276,13 +326,18 @@ export default function AttendancePage() {
                 Attendance
               </h1>
               <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-2xl">
-                Track your attendance with location verification
+                Track your attendance with location verification and device management
               </p>
               
               <div className="hidden lg:flex items-center gap-2 text-sm text-gray-500 mt-3">
                 <span className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   Location enabled
+                </span>
+                <span className="text-gray-300">•</span>
+                <span className="flex items-center gap-1">
+                  <FiSmartphone className="h-3 w-3" />
+                  {deviceInfo?.deviceType || 'Unknown'} device
                 </span>
                 <span className="text-gray-300">•</span>
                 <span>Last updated: just now</span>
