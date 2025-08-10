@@ -1,4 +1,3 @@
-// src/app/(auth)/register/page.js
 'use client';
 
 import { useState } from 'react';
@@ -83,7 +82,11 @@ export default function RegisterPage() {
     if (!validateStep2()) return;
 
     setLoading(true);
-    const result = await registerCompany(formData);
+    
+    // ✅ Remove adminConfirmPassword before sending to API
+    const { adminConfirmPassword, ...registrationData } = formData;
+    
+    const result = await registerCompany(registrationData);
     setLoading(false);
 
     if (!result.success) {
