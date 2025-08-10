@@ -42,7 +42,7 @@ export const DesktopAuthHeader = ({ title, showRegisterButton = true, showLoginB
 // Desktop Login Form
 export const DesktopLoginForm = ({ formData, handleChange, handleSubmit, loading, showPassword, setShowPassword }) => {
   return (
-    <div className="hidden md:flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="hidden md:flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-white">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
