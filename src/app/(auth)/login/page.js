@@ -133,26 +133,6 @@ export default function LoginPage() {
         />
         <DesktopAuthFooter />
       </div>
-     
-      
-      {/* Temporary desktop fallback */}
-      <div className="hidden md:block min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-800 mb-4">Desktop Version</h1>
-          <p className="text-slate-600 mb-8">Please use a mobile device or resize your browser window</p>
-          <div className="max-w-md mx-auto">
-            <MobileLoginForm
-              formData={formData}
-              handleChange={handleChange}
-              handleSubmit={handleSubmit}
-              loading={loading}
-              showPassword={showPassword}
-              setShowPassword={setShowPassword}
-              errors={errors}
-            />
-          </div>
-        </div>
-      </div>
     </>
   );
 }
