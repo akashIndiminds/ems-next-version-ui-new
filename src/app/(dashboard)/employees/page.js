@@ -49,43 +49,41 @@ export default function ResponsiveEmployeesPage() {
   }, [user]);
 
   // Fetch both employees and departments in parallel and map them
-  const fetchData = async () => {
-    try {
-      setLoading(true);
+const fetchData = async () => {
+  try {
+    setLoading(true);
+    
+    const [employeesResponse, departmentsResponse] = await Promise.all([
+      employeeAPI.getAll({
+        companyId: user.company.companyId,
+        page: 1,
+        limit: 100
+      }),
+      departmentAPI.getByCompany(user.company.companyId)
+    ]);
+    
+    if (employeesResponse.data.success && departmentsResponse.data.success) {
+      const employeesData = employeesResponse.data.data.employees || [];
+      const departmentsData = departmentsResponse.data.data || [];
       
-      const [employeesResponse, departmentsResponse] = await Promise.all([
-        employeeAPI.getAll({
-          companyId: user.company.companyId,
-          page: 1,
-          limit: 100
-        }),
-        departmentAPI.getByCompany(user.company.companyId)
-      ]);
+      const enrichedEmployees = employeesData.map(employee => ({
+        ...employee,
+        DepartmentName: employee.DepartmentName || 'Unassigned',
+        IsActive: employee.IsActive !== undefined ? employee.IsActive : true,
+        Gender: employee.Gender || 'Other',
+        BloodGroup: employee.BloodGroup || null
+      }));
       
-      if (employeesResponse.data.success && departmentsResponse.data.success) {
-        const employeesData = employeesResponse.data.data;
-        const departmentsData = departmentsResponse.data.data;
-        
-        const departmentMap = departmentsData.reduce((acc, dept) => {
-          acc[dept.DepartmentID] = dept.DepartmentName;
-          return acc;
-        }, {});
-        
-        const enrichedEmployees = employeesData.map(employee => ({
-          ...employee,
-          DepartmentName: departmentMap[employee.DepartmentID] || 'Unassigned'
-        }));
-        
-        setEmployees(enrichedEmployees);
-        setDepartments(departmentsData);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
+      setEmployees(enrichedEmployees);
+      setDepartments(departmentsData);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    toast.error('Failed to load data');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeleteEmployee = async () => {
     if (!employeeToDelete) return;
@@ -146,90 +144,89 @@ export default function ResponsiveEmployeesPage() {
   };
 
   // Filter configuration
-  const defaultFilters = [
-    {
-      key: 'department',
-      label: 'Department',
-      type: 'select',
-      options: [
-        { value: 'unassigned', label: 'Unassigned' },
-        ...departments.map(dept => ({
-          value: dept.DepartmentID.toString(),
-          label: dept.DepartmentName
-        }))
-      ]
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'select',
-      options: [
-        { value: 'true', label: 'Active' },
-        { value: 'false', label: 'Inactive' }
-      ]
-    },
-    {
-      key: 'bloodGroup',
-      label: 'Blood Group',
-      type: 'select',
-      options: [
-        { value: 'A+', label: 'A+' },
-        { value: 'A-', label: 'A-' },
-        { value: 'B+', label: 'B+' },
-        { value: 'B-', label: 'B-' },
-        { value: 'AB+', label: 'AB+' },
-        { value: 'AB-', label: 'AB-' },
-        { value: 'O+', label: 'O+' },
-        { value: 'O-', label: 'O-' }
-      ]
-    },
-    {
-      key: 'gender',
-      label: 'Gender',
-      type: 'select',
-      options: [
-        { value: 'Male', label: 'Male' },
-        { value: 'Female', label: 'Female' },
-        { value: 'Other', label: 'Other' }
-      ]
-    },
-    {
-      key: 'joiningDate',
-      label: 'Joined After',
-      type: 'date'
-    }
-  ];
+const defaultFilters = [
+  {
+    key: 'department',
+    label: 'Department',
+    type: 'select',
+    options: [
+      { value: 'unassigned', label: 'Unassigned' },
+      ...departments.map(dept => ({
+        value: dept.DepartmentName,
+        label: dept.DepartmentName
+      }))
+    ]
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    type: 'select',
+    options: [
+      { value: 'true', label: 'Active' },
+      { value: 'false', label: 'Inactive' }
+    ]
+  },
+  {
+    key: 'bloodGroup',
+    label: 'Blood Group',
+    type: 'select',
+    options: [
+      { value: 'A+', label: 'A+' },
+      { value: 'A-', label: 'A-' },
+      { value: 'B+', label: 'B+' },
+      { value: 'B-', label: 'B-' },
+      { value: 'AB+', label: 'AB+' },
+      { value: 'AB-', label: 'AB-' },
+      { value: 'O+', label: 'O+' },
+      { value: 'O-', label: 'O-' }
+    ]
+  },
+  {
+    key: 'gender',
+    label: 'Gender',
+    type: 'select',
+    options: [
+      { value: 'Male', label: 'Male' },
+      { value: 'Female', label: 'Female' },
+      { value: 'Other', label: 'Other' }
+    ]
+  },
+  {
+    key: 'joiningDate',
+    label: 'Joined After',
+    type: 'date'
+  }
+];
 
   // Enhanced filtering logic
-  const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = !searchTerm || 
-      emp.FullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.FirstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.LastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.Email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.EmployeeCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.DepartmentName?.toLowerCase().includes(searchTerm.toLowerCase());
+const filteredEmployees = employees.filter(emp => {
+  const matchesSearch = !searchTerm || 
+    emp.FullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.FirstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.LastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.Email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.EmployeeCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.DepartmentName?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesDepartment = !activeFilters.department || 
-      (activeFilters.department === 'unassigned' && (!emp.DepartmentID || emp.DepartmentName === 'Unassigned')) ||
-      emp.DepartmentID?.toString() === activeFilters.department;
+  const matchesDepartment = !activeFilters.department || 
+    (activeFilters.department === 'unassigned' && (!emp.DepartmentName || emp.DepartmentName === 'Unassigned')) ||
+    emp.DepartmentName === activeFilters.department;
 
-    const matchesStatus = !activeFilters.status || 
-      emp.IsActive?.toString() === activeFilters.status;
+  const matchesStatus = !activeFilters.status || 
+    (emp.IsActive?.toString() || 'true') === activeFilters.status;
 
-    const matchesBloodGroup = !activeFilters.bloodGroup || 
-      emp.BloodGroup === activeFilters.bloodGroup;
+  const matchesBloodGroup = !activeFilters.bloodGroup || 
+    emp.BloodGroup === activeFilters.bloodGroup;
 
-    const matchesGender = !activeFilters.gender || 
-      emp.Gender === activeFilters.gender;
+  const matchesGender = !activeFilters.gender || 
+    emp.Gender === activeFilters.gender;
 
-    const matchesJoiningDate = !activeFilters.joiningDate || 
-      (emp.DateOfJoining && new Date(emp.DateOfJoining) >= new Date(activeFilters.joiningDate));
+  const matchesJoiningDate = !activeFilters.joiningDate || 
+    (emp.DateOfJoining && new Date(emp.DateOfJoining) >= new Date(activeFilters.joiningDate));
 
-    return matchesSearch && matchesDepartment && matchesStatus && 
-           matchesBloodGroup && matchesGender && matchesJoiningDate;
-  });
-
+  return matchesSearch && matchesDepartment && matchesStatus && 
+         matchesBloodGroup && matchesGender && matchesJoiningDate;
+});
   const activeFiltersCount = Object.values(activeFilters).filter(v => v).length;
 
   return (
