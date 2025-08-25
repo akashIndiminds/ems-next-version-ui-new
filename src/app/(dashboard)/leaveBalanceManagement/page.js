@@ -91,26 +91,33 @@ const ResponsiveLeaveBalancePage = () => {
     }
   };
 
-  const loadEmployees = async () => {
-    try {
-      const response = await employeeAPI.getAll({
-        companyId: user?.company?.companyId,
-        limit: 100
-      });
-      if (response.data.success) {
-        setEmployees(response.data.data);
-        
-        // Extract unique departments
-        const uniqueDepartments = [...new Set(response.data.data.map(emp => emp.DepartmentName))]
-          .filter(dept => dept)
-          .map((dept) => ({ id: dept, name: dept }));
-        setDepartments(uniqueDepartments);
-      }
-    } catch (error) {
-      console.error('Failed to load employees:', error);
-      toast.error('Failed to load employees');
+ const loadEmployees = async () => {
+  try {
+    const response = await employeeAPI.getAll({
+      companyId: user?.company?.companyId,
+      limit: 100
+    });
+    if (response.data.success && Array.isArray(response.data.data.employees)) {
+      setEmployees(response.data.data.employees);
+      
+      // Extract unique departments
+      const uniqueDepartments = [...new Set(response.data.data.employees.map(emp => emp.DepartmentName))]
+        .filter(dept => dept)
+        .map((dept) => ({ id: dept, name: dept }));
+      setDepartments(uniqueDepartments);
+    } else {
+      console.error('Unexpected response format:', response.data);
+      setEmployees([]); // Fallback to empty array
+      setDepartments([]);
+      toast.error(response.data.message || 'Failed to load employees: Invalid response format');
     }
-  };
+  } catch (error) {
+    console.error('Failed to load employees:', error);
+    setEmployees([]); // Fallback to empty array
+    setDepartments([]);
+    toast.error(error.message || 'Failed to load employees');
+  }
+};
 
   const loadLeaveTypes = async () => {
     try {

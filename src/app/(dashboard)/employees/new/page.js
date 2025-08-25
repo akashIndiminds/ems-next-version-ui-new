@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { departmentAPI, authAPI, dropdownAPI } from '@/app/lib/api';
+import { departmentAPI, authAPI,  employeeAPI, dropdownAPI } from '@/app/lib/api';
 import toast from 'react-hot-toast';
 import { locationAPI } from '@/app/lib/api/locationAPI';
 
@@ -220,7 +220,7 @@ export default function ResponsiveAddEmployeePage() {
         delete employeeData.customDesignation;
       }
 
-      const response = await authAPI.addEmployee(employeeData);
+      const response = await employeeAPI.create(employeeData);
       if (response.data.success) {
         toast.success('Employee added successfully!');
         router.push('/employees');

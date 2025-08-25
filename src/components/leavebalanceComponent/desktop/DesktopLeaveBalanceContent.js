@@ -15,6 +15,7 @@ import {
 
 const DesktopLeaveBalanceContent = ({
   activeTab,
+  setActiveTab, // Ensure this is destructured
   employees = [],
   selectedEmployee,
   employeeBalance = [],
@@ -43,12 +44,12 @@ const DesktopLeaveBalanceContent = ({
   const [searchTerm, setSearchTerm] = useState("");
 
   // Utility Functions
-  const filteredEmployees = employees.filter(employee =>
+  const filteredEmployees = Array.isArray(employees) ? employees.filter(employee =>
     (employee.FullName || `${employee.FirstName} ${employee.LastName}`)
       .toLowerCase().includes(searchTerm.toLowerCase()) ||
     (employee.EmployeeCode || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (employee.DepartmentName || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) : [];
 
   const getBalanceColor = (used = 0, total = 0) => {
     if (total === 0) return "text-gray-600 bg-gray-100";
@@ -246,7 +247,7 @@ const DesktopLeaveBalanceContent = ({
               This employee doesn't have leave balance initialized for the current year.
             </p>
             <button
-              onClick={() => setActiveTab('initialize')}
+              onClick={() => setActiveTab('initialize')} // Ensure setActiveTab is used correctly
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               <FiPlus className="mr-2 h-4 w-4" />
@@ -318,7 +319,7 @@ const DesktopLeaveBalanceContent = ({
                 className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
               >
                 <option value="">Select an employee to initialize balance</option>
-                {employees.map((emp) => (
+                {filteredEmployees.map((emp) => (
                   <option key={emp.EmployeeID} value={emp.EmployeeID}>
                     {emp.FullName || `${emp.FirstName} ${emp.LastName}`} ({emp.EmployeeCode}) - {emp.DepartmentName}
                   </option>
@@ -394,7 +395,7 @@ const DesktopLeaveBalanceContent = ({
                   className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 bg-white"
                 >
                   <option value="">Select employee</option>
-                  {employees.map((emp) => (
+                  {filteredEmployees.map((emp) => (
                     <option key={emp.EmployeeID} value={emp.EmployeeID}>
                       {emp.FullName || `${emp.FirstName} ${emp.LastName}`} ({emp.EmployeeCode})
                     </option>

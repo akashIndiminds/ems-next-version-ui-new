@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { CompactPagination } from '../ui/Pagination';
 
 const MobileAttendanceHistory = ({ 
-  attendanceRecords, 
+  attendanceRecords: rawRecords, 
   dateRange, 
   setDateRange, 
   timeUtils,
@@ -16,14 +16,20 @@ const MobileAttendanceHistory = ({
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 5;
 
+  // Ensure records is always an array
+  const records = useMemo(() => 
+    Array.isArray(rawRecords) ? rawRecords : [], 
+    [rawRecords]
+  );
+
   // Calculate pagination
-  const totalPages = Math.ceil(attendanceRecords.length / recordsPerPage);
+  const totalPages = Math.ceil(records.length / recordsPerPage);
   const startIndex = (currentPage - 1) * recordsPerPage;
   const endIndex = startIndex + recordsPerPage;
 
   // Memoize processed records for current page
   const processedRecords = useMemo(() => {
-    return attendanceRecords.slice(startIndex, endIndex).map(record => ({
+    return records.slice(startIndex, endIndex).map(record => ({
       ...record,
       formattedDate: format(new Date(record.AttendanceDate), 'MMM d'),
       formattedDay: format(new Date(record.AttendanceDate), 'EEE'),
@@ -31,7 +37,7 @@ const MobileAttendanceHistory = ({
       checkOutTime: record.CheckOutTime ? timeUtils.formatTimeUTC(record.CheckOutTime) : null,
       workingHours: record.WorkingHours ? timeUtils.formatWorkingHours(record.WorkingHours) : '0h'
     }));
-  }, [attendanceRecords, timeUtils, startIndex, endIndex]);
+  }, [records, timeUtils, startIndex, endIndex]);
 
   const toggleFilters = () => setShowFilters(!showFilters);
   
@@ -72,7 +78,7 @@ const MobileAttendanceHistory = ({
             <div>
               <h2 className="text-sm font-medium text-gray-900">History</h2>
               <p className="text-xs text-gray-600">
-                {attendanceRecords.length} records
+                {records.length} records
                 {totalPages > 1 && (
                   <span className="ml-1">• Page {currentPage} of {totalPages}</span>
                 )}

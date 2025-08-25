@@ -69,17 +69,21 @@ const ResponsiveReportPage = () => {
     }
   };
 
-  const fetchEmployees = async () => {
+const fetchEmployees = async () => {
     try {
-      const response = await reportsAPI.getEmployees(user.company.companyId);
-      if (response.data.success) {
-        setEmployees(response.data.data);
-      }
+        const response = await reportsAPI.getEmployees(user.company.companyId);
+        if (response.data.success) {
+            setEmployees(response.data.data.employees || []); // Set to employees array or empty array
+        } else {
+            setEmployees([]); // Set to empty array on failure
+            toast.error(response.data.message || 'Failed to load employees');
+        }
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Failed to load employees');
+        console.error('Error fetching employees:', error);
+        setEmployees([]); // Set to empty array on error
+        toast.error('Failed to load employees');
     }
-  };
+};
 
   const generateReport = async () => {
     if (!user?.company?.companyId) {

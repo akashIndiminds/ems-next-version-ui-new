@@ -1,4 +1,4 @@
-// src/lib/utils/deviceManager.js
+// src/app/lib/deviceManager.js - FIXED VERSION
 class DeviceManager {
   // Generate device fingerprint (enhanced to match backend exactly)
   static generateDeviceFingerprint() {
@@ -56,6 +56,7 @@ class DeviceManager {
       return {
         deviceUUID: 'fallback-' + Date.now(),
         deviceType: 'Unknown',
+        fingerprint: {},
         deviceInfo: {}
       };
     }
@@ -88,39 +89,38 @@ class DeviceManager {
   // Generate consistent UUID using crypto API if available
   static generateConsistentUUID(stableAttributes) {
     const stableString = JSON.stringify(stableAttributes);
-    
-    // Use crypto.subtle if available (modern browsers)
-    if (window.crypto && window.crypto.subtle) {
-      return this.hashWithCrypto(stableString);
-    }
-    
-    // Fallback to simple hash
     return this.hashString(stableString);
   }
 
-  // Crypto-based hash (for better consistency)
-  static async hashWithCrypto(str) {
-    try {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(str);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-    } catch (error) {
-      console.warn('Crypto hash failed, using fallback:', error);
-      return this.hashString(str);
-    }
-  }
-
-  // Simple hash function (fallback)
+  // Simple hash function
   static hashString(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
+      hash = hash & hash;
     }
     return 'device-' + Math.abs(hash).toString(16);
+  }
+
+  // ✅ NEW: Get device info in the format expected by backend
+  static getDeviceInfo() {
+    let storedDevice = this.getStoredDeviceInfo();
+    
+    if (!storedDevice) {
+      console.log('🆕 Generating new device fingerprint...');
+      storedDevice = this.generateDeviceFingerprint();
+      this.storeDeviceInfo(storedDevice);
+    } else {
+      console.log('✅ Using stored device info:', storedDevice.deviceUUID?.substring(0, 8) + '...');
+    }
+    
+    // Return in the exact format expected by backend
+    return {
+      deviceUUID: storedDevice.deviceUUID,
+      deviceType: storedDevice.deviceType,
+      fingerprint: storedDevice.fingerprint || {}
+    };
   }
 
   // Store device info in localStorage
@@ -147,7 +147,7 @@ class DeviceManager {
       const parsed = JSON.parse(stored);
       
       // Check if stored info is too old (24 hours)
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+      const maxAge = 24 * 60 * 60 * 1000;
       if (parsed.lastUpdated && (Date.now() - parsed.lastUpdated) > maxAge) {
         console.log('🔄 Stored device info expired, regenerating...');
         localStorage.removeItem('deviceInfo');
@@ -157,33 +157,24 @@ class DeviceManager {
       return parsed;
     } catch (error) {
       console.warn('❌ Failed to get stored device info:', error);
-      localStorage.removeItem('deviceInfo'); // Clear corrupted data
+      localStorage.removeItem('deviceInfo');
       return null;
     }
   }
 
-  // Get or generate device info
-  static getDeviceInfo() {
-    let deviceInfo = this.getStoredDeviceInfo();
-    
-    if (!deviceInfo) {
-      console.log('🆕 Generating new device fingerprint...');
-      deviceInfo = this.generateDeviceFingerprint();
-      this.storeDeviceInfo(deviceInfo);
-    } else {
-      console.log('✅ Using stored device info:', deviceInfo.deviceUUID?.substring(0, 8) + '...');
-    }
-    
-    return deviceInfo;
-  }
-
-  // Validate device info before sending to backend
+  // ✅ NEW: Validate device info before sending to backend
   static validateDeviceInfo(deviceInfo) {
-    const required = ['deviceUUID', 'deviceType', 'deviceInfo'];
+    const required = ['deviceUUID', 'deviceType', 'fingerprint'];
     const missing = required.filter(field => !deviceInfo[field]);
     
     if (missing.length > 0) {
       console.error('❌ Missing device info fields:', missing);
+      return false;
+    }
+
+    // Check if fingerprint has minimum required fields
+    if (typeof deviceInfo.fingerprint !== 'object' || Object.keys(deviceInfo.fingerprint).length === 0) {
+      console.error('❌ Invalid fingerprint object');
       return false;
     }
 
@@ -198,43 +189,6 @@ class DeviceManager {
     } catch (error) {
       console.warn('❌ Failed to clear device info:', error);
     }
-  }
-
-  // Get device statistics for admin dashboard
-  static getDeviceStatistics() {
-    try {
-      const deviceInfo = this.getStoredDeviceInfo();
-      if (!deviceInfo) return null;
-
-      return {
-        deviceUUID: deviceInfo.deviceUUID,
-        deviceType: deviceInfo.deviceType,
-        browserName: deviceInfo.deviceInfo?.browserName,
-        platform: deviceInfo.deviceInfo?.platform,
-        screenResolution: deviceInfo.deviceInfo?.screenResolution,
-        timezone: deviceInfo.deviceInfo?.timezone,
-        registeredDate: deviceInfo.lastUpdated ? new Date(deviceInfo.lastUpdated).toISOString() : null,
-        lastUsed: deviceInfo.lastUsed ? new Date(deviceInfo.lastUsed).toISOString() : null
-      };
-    } catch (error) {
-      console.error('❌ Failed to get device statistics:', error);
-      return null;
-    }
-  }
-
-  // Check if device capabilities are available
-  static checkDeviceCapabilities() {
-    const capabilities = {
-      geolocation: 'geolocation' in navigator,
-      camera: 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices,
-      localStorage: typeof(Storage) !== 'undefined',
-      crypto: 'crypto' in window && 'subtle' in window.crypto,
-      webWorker: typeof(Worker) !== 'undefined',
-      serviceWorker: 'serviceWorker' in navigator
-    };
-
-    console.log('📋 Device capabilities:', capabilities);
-    return capabilities;
   }
 
   // Force refresh device fingerprint

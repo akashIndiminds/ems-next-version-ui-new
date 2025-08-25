@@ -1,9 +1,9 @@
-// src/app/(dashboard)/attendance/page.js
+// src/app/(dashboard)/attendance/page.js - FIXED VERSION
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { attendanceAPI } from '@/app/lib/api';
+import { attendanceAPI } from '@/app/lib/api/attendanceApi'; // ✅ Updated import
 import { FiClock, FiDownload, FiRefreshCw, FiSmartphone } from 'react-icons/fi';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -29,8 +29,9 @@ export default function AttendancePage() {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
 
-  // Device info state
+  // ✅ Device info state - now properly managed
   const [deviceInfo, setDeviceInfo] = useState(null);
+  const [deviceInitialized, setDeviceInitialized] = useState(false);
 
   const [dateRange, setDateRange] = useState({
     fromDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -39,33 +40,62 @@ export default function AttendancePage() {
 
   const userLocation = user?.assignedLocation;
 
-  // Initialize device info on component mount
+  // ✅ Initialize device info on component mount - IMPROVED VERSION
   useEffect(() => {
-    try {
-      const deviceData = DeviceManager.getDeviceInfo();
-      setDeviceInfo(deviceData);
-      console.log('🔧 Device Info initialized:', deviceData);
-    } catch (error) {
-      console.error('❌ Device initialization error:', error);
-      toast.error('Device initialization failed');
-    }
+    const initializeDevice = async () => {
+      try {
+        console.log('🚀 Initializing device info...');
+        
+        // Get device info using the fixed DeviceManager
+        const deviceData = DeviceManager.getDeviceInfo();
+        
+        // Validate the device info
+        const isValid = DeviceManager.validateDeviceInfo(deviceData);
+        
+        if (!isValid) {
+          console.warn('⚠️ Invalid device info, regenerating...');
+          DeviceManager.refreshDeviceInfo();
+          const newDeviceData = DeviceManager.getDeviceInfo();
+          setDeviceInfo(newDeviceData);
+        } else {
+          setDeviceInfo(deviceData);
+        }
+        
+        setDeviceInitialized(true);
+        
+        console.log('✅ Device initialized successfully:', {
+          deviceUUID: deviceData?.deviceUUID?.substring(0, 8) + '...',
+          deviceType: deviceData?.deviceType,
+          hasFingerprint: !!(deviceData?.fingerprint && Object.keys(deviceData?.fingerprint).length > 0)
+        });
+        
+      } catch (error) {
+        console.error('❌ Device initialization error:', error);
+        setDeviceInitialized(true); // Still proceed
+        toast.error('Device initialization failed. Some features may not work.');
+      }
+    };
+
+    initializeDevice();
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && deviceInitialized) {
       fetchAttendanceData();
     }
-  }, [user, dateRange]);
+  }, [user, dateRange, deviceInitialized]);
 
   const fetchAttendanceData = async () => {
     try {
       setLoading(true);
 
+      // Get today's status
       const todayResponse = await attendanceAPI.getTodayStatus(user.employeeId);
       if (todayResponse.data.success) {
         setTodayStatus(todayResponse.data.data);
       }
 
+      // Get attendance records
       const recordsResponse = await attendanceAPI.getRecords({
         employeeId: user.employeeId,
         fromDate: dateRange.fromDate,
@@ -169,45 +199,73 @@ export default function AttendancePage() {
     try {
       setCheckInLoading(true);
 
-      // Validate device info
-      if (!deviceInfo) {
-        toast.error('Device information not available');
+      // ✅ Check if device is initialized
+      if (!deviceInitialized || !deviceInfo) {
+        toast.error('Device not initialized. Please refresh the page.');
         return;
       }
 
+      // ✅ Validate device info before proceeding
+      if (!DeviceManager.validateDeviceInfo(deviceInfo)) {
+        console.error('❌ Invalid device info:', deviceInfo);
+        toast.error('Invalid device information. Please refresh the page.');
+        return;
+      }
+
+      console.log('🔄 Starting check-in process...', {
+        employeeId: user.employeeId,
+        deviceUUID: deviceInfo.deviceUUID?.substring(0, 8) + '...',
+        deviceType: deviceInfo.deviceType
+      });
+
+      // Validate location first
       const position = await validateLocation();
       if (!position) {
         return;
       }
 
-      // ✅ Remove hard-coded deviceId, let backend handle it
-      const response = await attendanceAPI.checkIn({
+      // ✅ Prepare check-in data (deviceInfo will be added by attendanceAPI.checkIn)
+      const checkInData = {
         employeeId: user.employeeId,
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        // deviceId: 2, // ❌ Removed hard-coded deviceId
         remarks: 'Web check-in with location validation',
-      });
+      };
+
+      console.log('📤 Calling attendanceAPI.checkIn with data:', checkInData);
+
+      // ✅ Call the fixed attendanceAPI.checkIn method
+      const response = await attendanceAPI.checkIn(checkInData);
 
       if (response.data.success) {
         toast.success('✅ Checked in successfully!');
         
         // Show device info if available
         if (response.data.deviceInfo) {
-          console.log('🔧 Device registered:', response.data.deviceInfo);
+          console.log('🔧 Device registered/updated:', {
+            deviceId: response.data.deviceInfo.deviceId,
+            isNewDevice: response.data.deviceInfo.isNewDevice,
+            message: response.data.deviceInfo.message
+          });
+          
           if (response.data.deviceInfo.isNewDevice) {
             toast.success('📱 New device registered successfully!');
           }
         }
         
-        fetchAttendanceData();
+        // Refresh attendance data
+        await fetchAttendanceData();
+      } else {
+        toast.error(response.data.message || 'Check-in failed');
       }
     } catch (error) {
       console.error('❌ Check-in error:', error);
       
       // Handle specific error cases
-      if (error.response?.status === 409) {
+      if (error.response?.status === 400 && error.response?.data?.message?.includes('deviceUUID')) {
+        toast.error('Device information invalid. Please refresh the page.');
+      } else if (error.response?.status === 409) {
         toast.error('Device conflict: This device is registered to another employee');
       } else if (error.response?.status === 423) {
         toast.error('Device sharing detected. Please contact administrator.');
@@ -223,34 +281,74 @@ export default function AttendancePage() {
     try {
       setCheckOutLoading(true);
 
-      // Validate device info
-      if (!deviceInfo) {
-        toast.error('Device information not available');
+      // ✅ Check if device is initialized
+      if (!deviceInitialized || !deviceInfo) {
+        toast.error('Device not initialized. Please refresh the page.');
         return;
       }
 
+      // ✅ Validate device info before proceeding
+      if (!DeviceManager.validateDeviceInfo(deviceInfo)) {
+        console.error('❌ Invalid device info:', deviceInfo);
+        toast.error('Invalid device information. Please refresh the page.');
+        return;
+      }
+
+      console.log('🔄 Starting check-out process...', {
+        employeeId: user.employeeId,
+        deviceUUID: deviceInfo.deviceUUID?.substring(0, 8) + '...',
+        deviceType: deviceInfo.deviceType
+      });
+
+      // Validate location first
       const position = await validateLocation();
       if (!position) {
         return;
       }
 
-      // ✅ Remove hard-coded deviceId, let backend handle it
-      const response = await attendanceAPI.checkOut({
+      // ✅ Prepare check-out data (deviceInfo will be added by attendanceAPI.checkOut)
+      const checkOutData = {
         employeeId: user.employeeId,
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        // deviceId: 2, // ❌ Removed hard-coded deviceId
         remarks: 'Web check-out with location validation',
-      });
+      };
+
+      console.log('📤 Calling attendanceAPI.checkOut with data:', checkOutData);
+
+      // ✅ Call the fixed attendanceAPI.checkOut method
+      const response = await attendanceAPI.checkOut(checkOutData);
 
       if (response.data.success) {
         toast.success('✅ Checked out successfully!');
-        fetchAttendanceData();
+        
+        // Show device info if available
+        if (response.data.deviceInfo) {
+          console.log('🔧 Device updated:', {
+            deviceId: response.data.deviceInfo.deviceId,
+            message: response.data.deviceInfo.message
+          });
+        }
+        
+        // Refresh attendance data
+        await fetchAttendanceData();
+      } else {
+        toast.error(response.data.message || 'Check-out failed');
       }
     } catch (error) {
       console.error('❌ Check-out error:', error);
-      toast.error(error.response?.data?.message || 'Failed to check out');
+      
+      // Handle specific error cases
+      if (error.response?.status === 400 && error.response?.data?.message?.includes('deviceUUID')) {
+        toast.error('Device information invalid. Please refresh the page.');
+      } else if (error.response?.status === 409) {
+        toast.error('Device conflict: This device is registered to another employee');
+      } else if (error.response?.status === 423) {
+        toast.error('Device sharing detected. Please contact administrator.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to check out');
+      }
     } finally {
       setCheckOutLoading(false);
     }
@@ -271,11 +369,17 @@ export default function AttendancePage() {
     }
   };
 
-  if (loading) {
+  // ✅ Show loading while device is initializing
+  if (!deviceInitialized || loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="relative">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-xs text-blue-600 font-medium">
+              {!deviceInitialized ? 'Device...' : 'Loading...'}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -303,7 +407,7 @@ export default function AttendancePage() {
           </div>
           <p className="text-sm text-gray-600">Track attendance with location verification</p>
           
-          {/* Mobile Status Bar with Device Info */}
+          {/* Mobile Status Bar with Enhanced Device Info */}
           <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 mt-3">
             <div className="flex items-center gap-2 text-sm text-blue-700">
               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
@@ -314,11 +418,15 @@ export default function AttendancePage() {
               <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">
                 {deviceInfo?.deviceType || 'Unknown'}
               </span>
+              {/* ✅ Show device status indicator */}
+              {deviceInfo?.deviceUUID && (
+                <div className="w-2 h-2 bg-green-400 rounded-full ml-1" title="Device registered"></div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Desktop Header with Device Info */}
+        {/* Desktop Header with Enhanced Device Info */}
         <div className="hidden md:block">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 lg:gap-6 lg:items-start">
             <div className="space-y-2">
@@ -326,7 +434,7 @@ export default function AttendancePage() {
                 Attendance
               </h1>
               <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-2xl">
-                Track your attendance with location verification and device management
+                Track your attendance with location verification and smart device management
               </p>
               
               <div className="hidden lg:flex items-center gap-2 text-sm text-gray-500 mt-3">
@@ -339,6 +447,16 @@ export default function AttendancePage() {
                   <FiSmartphone className="h-3 w-3" />
                   {deviceInfo?.deviceType || 'Unknown'} device
                 </span>
+                {/* ✅ Enhanced device info */}
+                {deviceInfo?.deviceUUID && (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Device registered
+                    </span>
+                  </>
+                )}
                 <span className="text-gray-300">•</span>
                 <span>Last updated: just now</span>
               </div>

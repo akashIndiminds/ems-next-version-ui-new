@@ -6,34 +6,33 @@ import { useAuth } from "@/context/AuthContext";
 import { companyAPI, attendanceAPI } from "@/app/lib/api";
 import { locationAPI } from "@/app/lib/api/locationAPI";
 import timeUtils from "@/app/lib/utils/timeUtils";
-import { FiRefreshCw, FiActivity, FiClock } from "react-icons/fi";
+import { FiRefreshCw } from "react-icons/fi";
 import toast from "react-hot-toast";
 
-// Import responsive components
+// Import components with correct paths
 import MobileDashboardStats from "@/components/dashboard/mobile/MobileDashboardStats";
-import MobileAttendanceStatus from "@/components/dashboard/mobile/MobileAttendanceStatus";
+import MobileAttendanceMarking from "@/components/dashboard/mobile/MobileAttendanceMarking";
 import MobileDashboardHeader from "@/components/dashboard/mobile/MobileDashboardHeader";
-import MobileDashboardChart from "@/components/dashboard/mobile/MobileDashboardChart";
+import MobileHolidayList from "@/components/dashboard/mobile/MobileHolidayList";
 
-import DesktopDashboardStats from "@/components/dashboard/dekstop/DesktopDashboardStats";
-import DesktopAttendanceStatus from "@/components/dashboard/dekstop/DesktopAttendanceStatus";
-import DesktopDashboardChart from "@/components/dashboard/dekstop/DesktopDashboardChart";
-import DesktopDashboardHeader from "@/components/dashboard/dekstop/DesktopDashboardHeader";
+import DesktopDashboardStats from "@/components/dashboard/desktop/DesktopDashboardStats";
+import DesktopAttendanceMarking from "@/components/dashboard/desktop/DesktopAttendanceMarking";
+import DesktopDashboardHeader from "@/components/dashboard/desktop/DesktopDashboardHeader";
+import DesktopHolidayList from "@/components/dashboard/desktop/DesktopHolidayList";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [todayStatus, setTodayStatus] = useState(null);
+  const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [recentActivities, setRecentActivities] = useState([]);
 
   // Screen size detection
   const [isMobile, setIsMobile] = useState(false);
 
-  // Location validation states (same as attendance page)
+  // Location and attendance states
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationValidation, setLocationValidation] = useState(null);
   const [gettingLocation, setGettingLocation] = useState(false);
@@ -45,27 +44,82 @@ export default function DashboardPage() {
   // Screen size detection effect
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint is 768px
+      setIsMobile(window.innerWidth < 768);
     };
 
-    // Check on mount
     checkScreenSize();
-
-    // Add resize listener
     window.addEventListener("resize", checkScreenSize);
-
-    // Cleanup
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Update current time every minute for live working hours calculation
+  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
-
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch company holidays
+  const fetchHolidays = async () => {
+    try {
+      let companyId = user.company?.companyId;
+      if (Array.isArray(companyId)) {
+        companyId = companyId[0];
+      }
+
+      if (companyId) {
+        // Mock holiday data - replace with actual API call
+        const mockHolidays = [
+          {
+            id: 1,
+            name: "New Year's Day",
+            date: "2025-01-01",
+            type: "National Holiday",
+            isUpcoming: new Date("2025-01-01") > new Date(),
+          },
+          {
+            id: 2,
+            name: "Republic Day",
+            date: "2025-01-26",
+            type: "National Holiday",
+            isUpcoming: new Date("2025-01-26") > new Date(),
+          },
+          {
+            id: 3,
+            name: "Independence Day",
+            date: "2025-08-15",
+            type: "National Holiday",
+            isUpcoming: new Date("2025-08-15") > new Date(),
+          },
+          {
+            id: 4,
+            name: "Gandhi Jayanti",
+            date: "2025-10-02",
+            type: "National Holiday",
+            isUpcoming: new Date("2025-10-02") > new Date(),
+          },
+          {
+            id: 5,
+            name: "Christmas Day",
+            date: "2025-12-25",
+            type: "National Holiday",
+            isUpcoming: new Date("2025-12-25") > new Date(),
+          },
+        ];
+
+        // Filter upcoming holidays
+        const upcomingHolidays = mockHolidays
+          .filter(h => h.isUpcoming)
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .slice(0, 4); // Show only next 4 holidays
+
+        setHolidays(upcomingHolidays);
+      }
+    } catch (error) {
+      console.error("Error fetching holidays:", error);
+    }
+  };
 
   const fetchDashboardData = async (isRefresh = false) => {
     try {
@@ -75,7 +129,6 @@ export default function DashboardPage() {
         setLoading(true);
       }
 
-      // Use user data directly from AuthContext
       let employeeId = user.employeeId;
       if (Array.isArray(employeeId)) {
         employeeId = employeeId[0];
@@ -86,8 +139,8 @@ export default function DashboardPage() {
         companyId = companyId[0];
       }
 
-      // Fetch company dashboard stats if admin
-      if (user.role === "admin" && companyId) {
+      // Fetch role-based dashboard stats
+      if ((user.role === "admin" || user.role === "manager") && companyId) {
         try {
           const response = await companyAPI.getDashboard(companyId);
           if (response.data.success) {
@@ -98,7 +151,7 @@ export default function DashboardPage() {
         }
       }
 
-      // Fetch today's attendance status
+      // Fetch today's attendance status for all users
       if (employeeId) {
         try {
           const todayResponse = await attendanceAPI.getTodayStatus(employeeId);
@@ -110,39 +163,9 @@ export default function DashboardPage() {
         }
       }
 
-      // Mock chart data (in real app, fetch from API)
-      setChartData([
-        { name: "Mon", present: 85, absent: 15 },
-        { name: "Tue", present: 88, absent: 12 },
-        { name: "Wed", present: 92, absent: 8 },
-        { name: "Thu", present: 87, absent: 13 },
-        { name: "Fri", present: 90, absent: 10 },
-      ]);
+      // Fetch holidays
+      await fetchHolidays();
 
-      // Mock recent activities
-      setRecentActivities([
-        {
-          id: 1,
-          type: "checkin",
-          message: "You checked in today",
-          time: todayStatus?.CheckInTime || new Date().toISOString(),
-          color: "emerald",
-        },
-        {
-          id: 2,
-          type: "leave",
-          message: "Leave request approved for Dec 25-26",
-          time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          color: "blue",
-        },
-        {
-          id: 3,
-          type: "policy",
-          message: "New company policy updated",
-          time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          color: "amber",
-        },
-      ]);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       toast.error("Failed to load dashboard data");
@@ -169,7 +192,7 @@ export default function DashboardPage() {
     }
   };
 
-  // Location validation functions (copied from attendance page)
+  // Location validation functions
   const getCurrentLocation = async () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -195,8 +218,7 @@ export default function DashboardPage() {
           let message = "Failed to get location";
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              message =
-                "Location permission denied. Please enable location access.";
+              message = "Location permission denied. Please enable location access.";
               break;
             case error.POSITION_UNAVAILABLE:
               message = "Location information is unavailable.";
@@ -237,7 +259,6 @@ export default function DashboardPage() {
         user.employeeId
       );
 
-      console.log("🔍 Location validation response:", response.data);
       setLocationValidation(response.data);
 
       if (response.data.success) {
@@ -256,7 +277,7 @@ export default function DashboardPage() {
     }
   };
 
-  // Updated handleCheckIn with location validation
+  // Enhanced handleCheckIn with better error handling
   const handleCheckIn = async () => {
     if (!user) {
       toast.error("User not found");
@@ -266,7 +287,6 @@ export default function DashboardPage() {
     try {
       setCheckInLoading(true);
 
-      // Validate location first
       const position = await validateLocation();
       if (!position) {
         return;
@@ -277,28 +297,43 @@ export default function DashboardPage() {
         employeeId = employeeId[0];
       }
 
+      const deviceInfo = {
+        deviceUUID: navigator.userAgent,
+        deviceType: "web",
+        deviceName: "Web Browser",
+        platform: navigator.platform,
+      };
+
       const response = await attendanceAPI.checkIn({
         employeeId: employeeId,
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        deviceId: 5,
-        remarks: "Dashboard check-in with location validation",
+        deviceInfo: deviceInfo,
+        remarks: "Dashboard check-in",
       });
 
       if (response.data.success) {
-        toast.success("✅ Checked in successfully!");
+        const { shiftDetails, message } = response.data;
+        
+        if (shiftDetails && shiftDetails.isLate) {
+          toast.success(`✅ ${message}`, { duration: 4000 });
+        } else {
+          toast.success("✅ Checked in successfully!");
+        }
+        
         fetchDashboardData(true);
       }
     } catch (error) {
       console.error("❌ Check-in error:", error);
-      toast.error(error.response?.data?.message || "Failed to check in");
+      const errorMessage = error.response?.data?.message || "Failed to check in";
+      toast.error(errorMessage);
     } finally {
       setCheckInLoading(false);
     }
   };
 
-  // Updated handleCheckOut with location validation
+  // Enhanced handleCheckOut with working hours display
   const handleCheckOut = async () => {
     if (!user) {
       toast.error("User not found");
@@ -308,7 +343,6 @@ export default function DashboardPage() {
     try {
       setCheckOutLoading(true);
 
-      // Validate location first
       const position = await validateLocation();
       if (!position) {
         return;
@@ -319,22 +353,40 @@ export default function DashboardPage() {
         employeeId = employeeId[0];
       }
 
+      const deviceInfo = {
+        deviceUUID: navigator.userAgent,
+        deviceType: "web",
+        deviceName: "Web Browser",
+        platform: navigator.platform,
+      };
+
       const response = await attendanceAPI.checkOut({
         employeeId: employeeId,
         locationId: userLocation.locationId,
         latitude: position.latitude,
         longitude: position.longitude,
-        deviceId: 1,
-        remarks: "Dashboard check-out with location validation",
+        deviceInfo: deviceInfo,
+        remarks: "Dashboard check-out",
       });
 
       if (response.data.success) {
-        toast.success("✅ Checked out successfully!");
+        const { workingDetails, message } = response.data;
+        
+        if (workingDetails) {
+          toast.success(
+            `✅ ${message}\nWorking hours: ${workingDetails.totalWorkingHours}h`,
+            { duration: 4000 }
+          );
+        } else {
+          toast.success("✅ Checked out successfully!");
+        }
+        
         fetchDashboardData(true);
       }
     } catch (error) {
       console.error("❌ Check-out error:", error);
-      toast.error(error.response?.data?.message || "Failed to check out");
+      const errorMessage = error.response?.data?.message || "Failed to check out";
+      toast.error(errorMessage);
     } finally {
       setCheckOutLoading(false);
     }
@@ -383,7 +435,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen p-4 bg-gray-50">
       <div className="sm:p-6 space-y-6">
-        {/* Header - Conditional Rendering */}
+        {/* Header - Role-based */}
         {isMobile ? (
           <MobileDashboardHeader
             user={user}
@@ -400,9 +452,9 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Today's Attendance Status - Conditional Rendering */}
+        {/* Attendance Marking - For all users */}
         {isMobile ? (
-          <MobileAttendanceStatus
+          <MobileAttendanceMarking
             todayStatus={todayStatus}
             userLocation={userLocation}
             timeUtils={timeUtils}
@@ -415,7 +467,7 @@ export default function DashboardPage() {
             gettingLocation={gettingLocation}
           />
         ) : (
-          <DesktopAttendanceStatus
+          <DesktopAttendanceMarking
             todayStatus={todayStatus}
             timeUtils={timeUtils}
             userLocation={userLocation}
@@ -429,83 +481,21 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Stats Grid - Conditional Rendering */}
-        {isMobile ? (
-          <MobileDashboardStats stats={stats} userRole={user.role} />
-        ) : (
-          <DesktopDashboardStats stats={stats} userRole={user.role} />
+        {/* Stats Grid - Only for Admin/Manager */}
+        {(user.role === 'admin' || user.role === 'manager') && (
+          isMobile ? (
+            <MobileDashboardStats stats={stats} userRole={user.role} />
+          ) : (
+            <DesktopDashboardStats stats={stats} userRole={user.role} />
+          )
         )}
 
-        {/* Attendance Chart - Conditional Rendering */}
+        {/* Company Holidays - For all users */}
         {isMobile ? (
-          <MobileDashboardChart chartData={chartData} userRole={user.role} />
+          <MobileHolidayList holidays={holidays} />
         ) : (
-          <DesktopDashboardChart chartData={chartData} userRole={user.role} />
+          <DesktopHolidayList holidays={holidays} />
         )}
-
-        {/* Recent Activities */}
-        <div className="bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="p-4 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center">
-              <FiActivity className="mr-2 sm:mr-3 text-indigo-600 h-5 w-5 sm:h-6 sm:w-6" />
-              Recent Activities
-            </h2>
-          </div>
-          <div className="p-4 sm:p-6">
-            <div className="space-y-3 sm:space-y-4">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className={`flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r rounded-xl border transition-colors duration-200 hover:shadow-sm ${
-                    activity.color === "emerald"
-                      ? "from-emerald-50 to-green-50 border-emerald-200"
-                      : activity.color === "blue"
-                      ? "from-blue-50 to-cyan-50 border-blue-200"
-                      : "from-amber-50 to-yellow-50 border-amber-200"
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <div
-                      className={`flex-shrink-0 w-3 h-3 rounded-full mr-3 sm:mr-4 ${
-                        activity.color === "emerald"
-                          ? "bg-emerald-500"
-                          : activity.color === "blue"
-                          ? "bg-blue-500"
-                          : "bg-amber-500"
-                      }`}
-                    ></div>
-                    <div>
-                      <p className="text-gray-700 font-medium text-sm sm:text-base">
-                        {activity.message}
-                      </p>
-                      {activity.type === "checkin" &&
-                        todayStatus?.CheckInTime && (
-                          <p
-                            className={`text-xs sm:text-sm mt-1 ${
-                              activity.color === "emerald"
-                                ? "text-emerald-600"
-                                : activity.color === "blue"
-                                ? "text-blue-600"
-                                : "text-amber-600"
-                            }`}
-                          >
-                            at {timeUtils.formatTimeUTC(activity.time)}
-                          </p>
-                        )}
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {activity.type === "checkin" && todayStatus?.CheckInTime
-                      ? timeUtils.formatDateLocale(activity.time)
-                      : activity.type === "leave"
-                      ? "2 days ago"
-                      : "1 week ago"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

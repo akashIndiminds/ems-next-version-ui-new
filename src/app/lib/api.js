@@ -53,7 +53,6 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   registerCompany: (data) => api.post('/auth/register-company', data),
-  addEmployee: (data) => api.post('/auth/add-employee', data),
   changePassword: (data) => api.post('/auth/change-password', data),
   resetPassword: (data) => api.post('/auth/reset-password', data),
 };
@@ -62,7 +61,7 @@ export const authAPI = {
 export const employeeAPI = {
   getAll: (params) => api.get('/employees', { params }),
   getById: (id) => api.get(`/employees/${id}`),
-  create: (data) => api.post('/employees', data),
+  create: (data) => api.post('/employees/add-employee', data),
   update: (id, data) => api.put(`/employees/${id}`, data),
   delete: (id) => api.delete(`/employees/${id}`),
   

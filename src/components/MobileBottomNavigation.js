@@ -27,7 +27,7 @@ const MobileBottomNavigation = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
-  // Primary navigation items (max 4 + More button = 5 total as per research)
+  // Primary navigation items - UPDATED to include Leave as primary tab
   const primaryNavItems = [
     {
       id: "home",
@@ -42,10 +42,20 @@ const MobileBottomNavigation = () => {
       name: "People",
       href: "/employees",
       icon: FiUsers,
-      roles: ["admin", "manager", "employee"],
+      roles: ["admin", "manager"],
       description: "Team & Directory",
-      fallback: "/leaves", // Changed fallback for employees to see their leaves
-      employeeIcon: MdOutlineBeachAccess, // Different icon for employees
+    },
+    {
+      id: "leaves", // NEW: Add Leave as primary navigation
+      name: "Leave",
+      href: "/leaves",
+      icon: MdOutlineBeachAccess,
+      roles: ["admin", "manager", "employee"],
+      description: "Leave Management",
+      // Different paths based on role
+      adminHref: "/leaves", // For admins - manage all leaves
+      managerHref: "/leaves", // For managers - manage team leaves
+      employeeHref: "/leaves", // For employees - their own leaves
     },
     {
       id: "time",
@@ -53,12 +63,12 @@ const MobileBottomNavigation = () => {
       href: "/attendance",
       icon: FiClock,
       roles: ["admin", "manager", "employee"],
-      description: "Attendance & Leaves",
+      description: "Attendance & Time",
     },
     {
       id: "more",
       name: "More",
-      href: null, // No direct href - opens menu
+      href: null,
       icon: FiMoreHorizontal,
       roles: ["admin", "manager", "employee"],
       description: "More Options",
@@ -66,7 +76,7 @@ const MobileBottomNavigation = () => {
     },
   ];
 
-  // Secondary navigation items - accessed via "More" menu
+  // Secondary navigation items - UPDATED to remove duplicate leave options
   const secondaryNavItems = [
     // Reports & Analytics Section
     {
@@ -85,6 +95,13 @@ const MobileBottomNavigation = () => {
           icon: FiBarChart,
           roles: ["admin", "manager"],
           description: "Manage team attendance",
+        },
+        {
+          name: "Leave Balance Manager", // For admins/managers
+          href: "/leaveBalanceManagement",
+          icon: MdOutlineCalendarMonth,
+          roles: ["admin", "manager"],
+          description: "Manage team leave balances",
         },
       ],
     },
@@ -115,24 +132,10 @@ const MobileBottomNavigation = () => {
         },
       ],
     },
-    // Personal Section - Added Leave Management for employees
+    // Personal Section
     {
       section: "Personal",
       items: [
-        {
-          name: "My Leaves",
-          href: "/leaves",
-          icon: MdOutlineBeachAccess,
-          roles: ["employee"], // Only for employees
-          description: "View and manage your leave applications",
-        },
-        {
-          name: "Leave Balance",
-          href: "/leaveBalance",
-          icon: MdOutlineCalendarMonth,
-          roles: ["employee"], // Only for employees
-          description: "Check your leave balance",
-        },
         {
           name: "My Profile",
           href: "/profile",
@@ -146,6 +149,14 @@ const MobileBottomNavigation = () => {
           icon: FiSettings,
           roles: ["admin", "manager", "employee"],
           description: "App settings and preferences",
+        },
+        // Keep personal leave balance for employees in More menu
+        {
+          name: "My Leave Balance",
+          href: "/leaveBalance",
+          icon: MdOutlineCalendarMonth,
+          roles: ["employee"],
+          description: "Check your personal leave balance",
         },
       ],
     },
@@ -165,14 +176,26 @@ const MobileBottomNavigation = () => {
     // Handle role-based navigation
     let targetHref = item.href;
 
-    // For employees, redirect People tab to their leaves instead of employees list
-    if (item.id === "people" && user.role === "employee" && item.fallback) {
-      targetHref = item.fallback;
+    // NEW: Handle Leave navigation based on role
+    if (item.id === "leaves") {
+      switch (user.role) {
+        case "admin":
+          targetHref = item.adminHref || "/leaveManagement";
+          break;
+        case "manager":
+          targetHref = item.managerHref || "/leaveManagement";
+          break;
+        case "employee":
+          targetHref = item.employeeHref || "/leaves";
+          break;
+        default:
+          targetHref = "/leaves";
+      }
     }
 
     try {
       router.push(targetHref);
-      setMoreMenuOpen(false); // Close more menu when navigating
+      setMoreMenuOpen(false);
       setTimeout(() => setActiveTab(null), 300);
     } catch (error) {
       console.error("Navigation error:", error);
@@ -199,28 +222,29 @@ const MobileBottomNavigation = () => {
       return pathname === "/dashboard";
     }
 
-    // People tab logic - different behavior based on role
+    // People tab logic
     if (item.id === "people") {
-      if (user.role === "employee") {
-        // For employees, People tab is active when viewing leaves
-        return (
-          pathname.startsWith("/leaves") || pathname.startsWith("/leaveBalance")
-        );
-      } else {
-        // For admin/manager, People tab is active for employee-related pages
-        return (
-          pathname.startsWith("/employees") ||
-          pathname.startsWith("/departments")
-        );
-      }
+      return (
+        pathname.startsWith("/employees") ||
+        pathname.startsWith("/departments")
+      );
     }
 
-    // Time tab logic - attendance related
+    // NEW: Leave tab logic - covers all leave-related paths
+    if (item.id === "leaves") {
+      return (
+        pathname.startsWith("/leaves") ||
+        pathname.startsWith("/leaveManagement") ||
+        pathname.startsWith("/leaveBalance")
+      );
+    }
+
+    // Time tab logic
     if (item.id === "time") {
       return pathname.startsWith("/attendance");
     }
 
-    // More tab logic - check if current path is in secondary navigation
+    // More tab logic
     if (item.id === "more") {
       const allSecondaryPaths = secondaryNavItems.flatMap((section) =>
         section.items.map((item) => item.href)
@@ -237,13 +261,6 @@ const MobileBottomNavigation = () => {
     }
 
     return false;
-  };
-
-  const getDisplayName = (item) => {
-    if (item.id === "people" && user.role === "employee") {
-      return "Leaves"; // Changed from 'Team' to 'Leaves' for employees
-    }
-    return item.name;
   };
 
   // Close more menu when clicking outside or on route change
@@ -413,8 +430,8 @@ const MobileBottomNavigation = () => {
       {/* Bottom Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-30">
         <div className="bg-white border-t border-gray-200 shadow-2xl">
-          {/* Navigation Items */}
-          <div className="grid grid-cols-4 h-16">
+          {/* Navigation Items - UPDATED to show only 5 items max */}
+          <div className="grid grid-cols-5 h-16">
             {primaryNavItems
               .filter((item) => item.roles.includes(user.role))
               .map((item) => {
@@ -438,42 +455,22 @@ const MobileBottomNavigation = () => {
                     `}
                   >
                     <div className="relative">
-                      {/* Use different icon for employees on People tab */}
-                      {item.id === "people" && user.role === "employee" ? (
-                        <item.employeeIcon
-                          className={`
-                            h-5 w-5 transition-all duration-200
-                            ${
-                              active || isMoreActive
-                                ? "text-blue-600 scale-110"
-                                : "text-gray-500"
-                            }
-                            ${loading ? "animate-pulse" : ""}
-                            ${
-                              item.isMoreButton && moreMenuOpen
-                                ? "rotate-180"
-                                : ""
-                            }
-                          `}
-                        />
-                      ) : (
-                        <item.icon
-                          className={`
-                            h-5 w-5 transition-all duration-200
-                            ${
-                              active || isMoreActive
-                                ? "text-blue-600 scale-110"
-                                : "text-gray-500"
-                            }
-                            ${loading ? "animate-pulse" : ""}
-                            ${
-                              item.isMoreButton && moreMenuOpen
-                                ? "rotate-180"
-                                : ""
-                            }
-                          `}
-                        />
-                      )}
+                      <item.icon
+                        className={`
+                          h-5 w-5 transition-all duration-200
+                          ${
+                            active || isMoreActive
+                              ? "text-blue-600 scale-110"
+                              : "text-gray-500"
+                          }
+                          ${loading ? "animate-pulse" : ""}
+                          ${
+                            item.isMoreButton && moreMenuOpen
+                              ? "rotate-180"
+                              : ""
+                          }
+                        `}
+                      />
                       {(active || isMoreActive) && (
                         <div className="absolute -top-1 -right-1 h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
                       )}
@@ -488,7 +485,7 @@ const MobileBottomNavigation = () => {
                       }
                     `}
                     >
-                      {getDisplayName(item)}
+                      {item.name}
                     </span>
 
                     {/* More button indicator */}
